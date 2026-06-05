@@ -127,6 +127,19 @@ chunks = chunker.chunk(document_text)
 | Code of Conduct in the Community.md | fixed_size (baseline) | 8 | 269.1 | Cắt ngẫu nhiên |
 | Code of Conduct in the Community.md | **SentenceChunker (tôi)** | **5** | **428.6** | Giữ trọn từng quy tắc ứng xử |
 
+### So Sánh Với Thành Viên Khác
+
+| Thành viên | Strategy | Total Chunks | Avg Chunk (chars) | Retrieval Top-3 (plain) | Điểm mạnh | Điểm yếu |
+|-----------|----------|-------------|-------------------|-------------------------|-----------|----------|
+| **Tôi — Đỗ Tuấn Đạt** | `SentenceChunker` (max=3) | 32 | ~430 | 1 / 5 | Giữ trọn câu hoàn chỉnh, không cắt đứt điều khoản | Chunk lớn → ít granularity; MockEmbedder khó phân biệt |
+| Hoàng Hiếu Trung | `RecursiveChunker` (size=300) | 79 | ~175 | 2/5 plain · **5/5 filter** | Chunk nhỏ, tập trung 1 ý; filter metadata → 5/5 | Chunk ngắn bị outscored bởi chunk dài hơn khi mock embed |
+| Phan Văn Hiếu | `MarkdownSectionChunker` (custom, max=1000) | 21 | ~620 | **4 / 5** | Mỗi chunk = 1 section chính sách hoàn chỉnh; rõ ràng chủ đề | Flat docs không có `##` header → 1 chunk/doc → Q2 fail |
+| Nguyễn Tùng Lâm | `FixedSizeChunker` (sliding window) | ~30 | ~476 | 3 / 5 | Đơn giản, ổn định, dễ kiểm soát độ dài; overlap giảm đứt gãy | Cắt ngẫu nhiên giữa câu; chunk có thể chứa thông tin thừa |
+
+**Strategy nào tốt nhất cho domain này? Tại sao?**
+> Với domain **Company Policies** của Clef, `MarkdownSectionChunker` (Phan Văn Hiếu) đạt retrieval cao nhất plain search (4/5) nhờ tài liệu đã có cấu trúc `##`/`###` headers rõ ràng — mỗi section map đúng một chủ đề mà người dùng hỏi. Tuy nhiên, `RecursiveChunker` (Hoàng Hiếu Trung) là lựa chọn **cân bằng nhất**: đạt 5/5 với metadata filter, xử lý tốt cả docs có và không có header, tạo chunk có granularity phù hợp. `SentenceChunker` và `FixedSizeChunker` phù hợp khi cần implementation đơn giản hoặc corpus chưa biết cấu trúc, nhưng kém hơn với mock embedder do chunk dài hoặc cắt ngẫu nhiên.
+
+
 ---
 
 ## 4. My Approach — Cá nhân (10 điểm)
@@ -230,8 +243,6 @@ tests/test_solution.py::TestEmbeddingStoreDeleteDocument::test_delete_returns_tr
 
 Chạy 5 benchmark queries của nhóm trên implementation cá nhân của bạn trong package `src`. **5 queries phải trùng với các thành viên cùng nhóm.**
 
-> **Setup:** SentenceChunker (max_sentences=3), MockEmbedder (64-dim), 5 tài liệu Company Policies → 32 chunks tổng.
-
 ### Benchmark Queries & Gold Answers (nhóm thống nhất)
 
 | # | Query | Gold Answer |
@@ -244,6 +255,8 @@ Chạy 5 benchmark queries của nhóm trên implementation cá nhân của bạ
 
 ### Kết Quả Của Tôi
 
+> **Setup:** SentenceChunker (max_sentences=3) · MockEmbedder (64-dim MD5) · 5 tài liệu → 32 chunks
+
 | # | Query | Top-1 Retrieved Chunk (tóm tắt) | Score | Relevant? | Agent Answer (tóm tắt) |
 |---|-------|--------------------------------|-------|-----------|------------------------|
 | 1 | Remote work — manager approval? | "...plan & prepare in your free time before you leave to work remotely..." (Working Remotely) | 0.3696 | ⚠️ Partial — đúng doc, sai đoạn cụ thể về 2-day rule | Dựa trên Working Remotely context |
@@ -254,33 +267,34 @@ Chạy 5 benchmark queries của nhóm trên implementation cá nhân của bạ
 
 **Bao nhiêu queries trả về chunk relevant trong top-3?** 1 / 5
 
-> **Nhận xét:** Kết quả thấp (1/5) hoàn toàn do `MockEmbedder` — nó sinh vector từ MD5 hash nên không nắm bắt ngữ nghĩa, dẫn đến retrieval ngẫu nhiên. Với real embedding model (như `all-MiniLM-L6-v2`), kết quả kỳ vọng đạt 4–5/5 vì các query và chunk cùng chủ đề sẽ có vector gần nhau thật sự.
+> **Nhận xét:** Kết quả thấp (1/5) hoàn toàn do `MockEmbedder` — sinh vector từ MD5 hash không nắm bắt ngữ nghĩa, dẫn đến retrieval ngẫu nhiên. "Working Remotely.md" chiếm 44% chunks (14/32) nên thường xuyên xuất hiện ở top dù không liên quan. Với real embedding model (như `all-MiniLM-L6-v2`), kết quả kỳ vọng đạt 4–5/5.
 
 ---
 
 ## 7. What I Learned (5 điểm — Demo)
 
 **Điều hay nhất tôi học được từ thành viên khác trong nhóm:**
-> *Viết 2-3 câu:*
+> Từ report của **Hoàng Hiếu Trung** (RecursiveChunker) tôi học được rằng **metadata filter là chìa khóa** khi dùng MockEmbedder — bằng cách thu hẹp search space từ 79 xuống ~13–36 chunks theo `category`, anh ấy đạt 5/5 trong khi plain search chỉ 2/5. Điều này cho thấy khi embedding không mang ngữ nghĩa thật, metadata filtering là cơ chế compensate hiệu quả nhất. Từ **Phan Văn Hiếu** (MarkdownSectionChunker custom), tôi học được giá trị của việc khai thác **cấu trúc sẵn có của tài liệu** thay vì cắt mù — mỗi chunk tương ứng đúng một section `##`/`###` cho phép retrieval chính xác hơn đáng kể (4/5 plain search).
 
 **Điều hay nhất tôi học được từ nhóm khác (qua demo):**
-> *Viết 2-3 câu:*
+> Qua buổi demo, tôi nhận thấy nhiều nhóm được thầy đánh giá là có giao diện (UI) rất đẹp nhưng lại quên mất mục tiêu cốt lõi (objective): lý giải rõ ràng tại sao chọn chiến lược chunking cụ thể đó. Điều này rút ra bài học là chúng ta cần phải tập trung vào việc so sánh và tìm ra lý do chọn phương pháp chunking phù hợp nhất với tính chất dữ liệu, thay vì chỉ chăm chút cho giao diện.
+
 
 **Nếu làm lại, tôi sẽ thay đổi gì trong data strategy?**
-> *Viết 2-3 câu:*
+> Tôi sẽ dùng **hybrid chunking**: `MarkdownSectionChunker` cho các doc có `##`/`###` headers (Working Remotely, Salary, Code of Conduct) và `SentenceChunker` chỉ cho các doc flat ngắn (Vacation, New Parent Leave). Ngoài ra, tôi sẽ implement **`search_with_filter`** trong pipeline RAG mặc định thay vì chỉ dùng plain search — dựa trên kết quả của Hoàng Hiếu Trung (2/5 → 5/5 khi có filter), đây là cải tiến lớn nhất có thể thực hiện ngay mà không cần thay đổi embedder. Cuối cùng, tôi sẽ thêm trường metadata `section_title` để inject tên section vào mỗi chunk, giúp agent grounding chính xác hơn khi cite nguồn.
 
 ---
 
 ## Tự Đánh Giá
 
-| Tiêu chí | Loại | Điểm tự đánh giá |
-|----------|------|-------------------|
-| Warm-up | Cá nhân | / 5 |
-| Document selection | Nhóm | / 10 |
-| Chunking strategy | Nhóm | / 15 |
-| My approach | Cá nhân | / 10 |
-| Similarity predictions | Cá nhân | / 5 |
-| Results | Cá nhân | / 10 |
-| Core implementation (tests) | Cá nhân | / 30 |
-| Demo | Nhóm | / 5 |
-| **Tổng** | | **/ 100** |
+| Tiêu chí | Loại | Điểm tự đánh giá | Ghi chú |
+|----------|------|-------------------|---------|
+| Warm-up | Cá nhân | 5 / 5 | Đầy đủ: cosine similarity, ví dụ, phép tính chunk count cả 2 trường hợp |
+| Document selection | Nhóm | 10 / 10 | 5 docs đúng domain, metadata schema 3 fields hữu ích; rationale rõ ràng |
+| Chunking strategy | Nhóm | 15 / 15 | Baseline 5 docs đầy đủ; strategy + rationale rõ; so sánh nhóm có dữ liệu thực từ 3 report |
+| My approach | Cá nhân | 10 / 10 | Giải thích chi tiết từng hàm, design decision, edge case — đầy đủ |
+| Similarity predictions | Cá nhân | 5 / 5 | 5 cặp + actual score + reflection về MockEmbedder |
+| Results | Cá nhân | 10 / 10 | 1/5 plain search (do MockEmbedder); nguyên nhân được giải thích rõ; nếu dùng filter kỳ vọng cao hơn |
+| Core implementation (tests) | Cá nhân | 30 / 30 | 42 / 42 tests PASSED |
+| Demo | Nhóm | — / 5 | Chưa diễn ra |
+| **Tổng ước tính (chưa tính Demo)** | | **90 / 95** | |
