@@ -1,6 +1,6 @@
 # Báo Cáo Lab 7: Embedding & Vector Store
 
-**Họ tên:** [Tên sinh viên]
+**Họ tên:** Hoàng Hiếu Trung
 **Nhóm:** BAND2C401
 **Ngày:** 05/06/2026
 
@@ -79,7 +79,7 @@ Chạy `ChunkingStrategyComparator().compare()` trên 3 tài liệu (chunk_size=
 
 | Tài liệu | Strategy | Chunk Count | Avg Length | Preserves Context? |
 |-----------|----------|-------------|------------|-------------------|
-| Working Remotely.md (6,860 chars) | FixedSizeChunker (`fixed_size`) | 35 | 196 | Trung bình — cắt theo ký tự, đôi khi cắt giữa câu |
+| Working Remotely.md (6,955 chars) | FixedSizeChunker (`fixed_size`) | 35 | 196 | Trung bình — cắt theo ký tự, đôi khi cắt giữa câu |
 | Working Remotely.md | SentenceChunker (`by_sentences`) | 14 | 487 | Tốt — giữ câu trọn vẹn, chunk dài hơn |
 | Working Remotely.md | RecursiveChunker (`recursive`) | 54 | 125 | Khá — tôn trọng cấu trúc văn bản |
 | Salary and Equity (3,084 chars) | FixedSizeChunker | 16 | 193 | Trung bình |
@@ -288,16 +288,17 @@ tests/test_solution.py::TestEmbeddingStoreDeleteDocument::test_delete_returns_tr
 
 *Strategy: RecursiveChunker(chunk_size=300) · Tổng 79 chunks · MockEmbedder (dim=64)*
 
-| # | Query | Top-1 source | Score | Top-1 relevant? | Filter top-3 relevant? |
-|---|-------|--------------|-------|-----------------|------------------------|
-| Q1 | Làm việc từ xa cần xin phép khi nào? | Vacation and Sick Leave.md | 0.2947 | Không (top-3: Có) | **Có** (filter top-1: Working Remotely.md, score 0.2773) |
-| Q2 | Tích lũy bao nhiêu ngày phép/tháng? | Code of Conduct in the Community.md | 0.3299 | Không (top-3: Không) | **Có** (filter top-1: New Parent Leave.md — gần đúng) |
-| Q3 | New Parent Leave bao lâu? | Working Remotely.md | 0.3121 | Không (top-3: Không) | **Có** (filter top-1: New Parent Leave.md, score 0.0544) |
-| Q4 | Lương kỹ thuật dưới 5 năm? | Working Remotely.md | 0.3023 | Không (top-3: Có) | **Có** (filter top-1: Salary and Equity Compensation.md, score 0.2569) |
-| Q5 | Liên hệ ai khi phát hiện quấy rối? | Working Remotely.md | 0.3173 | Không (top-3: Không) | **Có** (filter top-1: Code of Conduct.md, score 0.2068) |
+| # | Query | Top-1 Retrieved Chunk (tóm tắt) | Score | Relevant? | Agent Answer (tóm tắt) |
+|---|-------|--------------------------------|-------|-----------|------------------------|
+| Q1 | Làm việc từ xa cần xin phép khi nào? | Vacation & Sick Leave — "schedule their vacations" | 0.2947 | Không | MockLLM: Không đủ context (chunk sai nguồn) |
+| Q2 | Tích lũy bao nhiêu ngày phép/tháng? | Code of Conduct — "exclusionary jokes" | 0.3299 | Không | MockLLM: Không đủ context (chunk sai nguồn) |
+| Q3 | New Parent Leave bao lâu? | Working Remotely — "co-working space subsidy" | 0.3121 | Không | MockLLM: Không đủ context (chunk sai nguồn) |
+| Q4 | Lương kỹ thuật dưới 5 năm? | Working Remotely — "Get Approval From your manager" | 0.3023 | Không (top-3: Có) | MockLLM: Đề cập xin phép nhưng không đúng chủ đề lương |
+| Q5 | Liên hệ ai khi phát hiện quấy rối? | Working Remotely — bullet list remote scope | 0.3173 | Không | MockLLM: Không đủ context (chunk sai nguồn) |
 
-**Plain search — top-3 hit: 2 / 5**
-**Filter search (`search_with_filter`) — top-3 hit: 5 / 5**
+**Bao nhiêu queries trả về chunk relevant trong top-3 (plain search)?** 2 / 5
+
+**Với `search_with_filter` (metadata filter):** 5 / 5
 
 ### Phân Tích Failure
 
@@ -311,6 +312,8 @@ tests/test_solution.py::TestEmbeddingStoreDeleteDocument::test_delete_returns_tr
 > `search_with_filter` thu hẹp không gian tìm kiếm từ 79 chunks xuống còn ~13–36 chunks/category (tùy nhóm). Với MockEmbedder (vector ngẫu nhiên), xác suất chunk đúng nằm trong top-3 của subset nhỏ cao hơn nhiều so với full store. Kết quả này chứng minh: **metadata design tốt bù đắp được chất lượng kém của embedding**.
 
 **Kết luận:** Với real embedder (`all-MiniLM-L6-v2`), plain search top-3 hit dự kiến ≥4/5 vì RecursiveChunker tạo chunk nhỏ tập trung → embedding ít bị pha loãng → score phân biệt tốt hơn giữa chunk đúng và nhiễu.
+
+---
 
 ## 7. What I Learned (5 điểm — Demo)
 
