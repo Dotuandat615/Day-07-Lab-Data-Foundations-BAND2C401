@@ -234,36 +234,36 @@ Chạy 5 benchmark queries của nhóm trên implementation cá nhân của bạ
 
 | # | Query | Gold Answer |
 |---|-------|-------------|
-| 1 | | |
-| 2 | | |
-| 3 | | |
-| 4 | | |
-| 5 | | |
+| 1 | How long can I work remotely before needing manager approval? | Any extended remote work period longer than 2 days or working from a non-regular location requires your manager's approval at least 2 weeks in advance. |
+| 2 | How many vacation days do I accrue each month? | You accrue 1.25 days of paid vacation for every month of work (totaling 15 days/year). |
+| 3 | How long is the New Parent Leave policy for birth or adoption? | The company offers 12 weeks of paid leave for all full-time employees after the birth or adoption of a child, to be taken within the first year. |
+| 4 | What is the salary for a technical employee with less than 5 years of experience? | Technical employees with less than 5 years of experience receive a salary of $100k/year. |
+| 5 | Who should I contact if I notice harassment in the company? | You should contact B (b@getclef.com) or one of the other founders immediately. |
 
 ### Kết Quả Của Tôi
 
 | # | Query | Top-1 Retrieved Chunk (tóm tắt) | Score | Relevant? | Agent Answer (tóm tắt) |
 |---|-------|--------------------------------|-------|-----------|------------------------|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
-| 4 | | | | | |
-| 5 | | | | | |
+| 1 | How long can I work remotely before needing manager approval? | "ly for an extended period of time. This check-in should happ..." | 0.234 | Có | [DEMO LLM] Generated answer from prompt preview: Context: ly for an extended ... |
+| 2 | How many vacation days do I accrue each month? | "s).  These equity grants are larger than industry standard, ..." | 0.251 | Có | [DEMO LLM] Generated answer from prompt preview: Context: s).  These equity g... |
+| 3 | How long is the New Parent Leave policy for birth or adoption? | "s).  These equity grants are larger than industry standard, ..." | 0.244 | Không | [DEMO LLM] Generated answer from prompt preview: Context: s).  These equity g... |
+| 4 | What is the salary for a technical employee with less than 5 years of experience? | "rubric to make sure it stays at market rate.  Note: The thre..." | 0.280 | Có | [DEMO LLM] Generated answer from prompt preview: Context: rubric to make sure... |
+| 5 | Who should I contact if I notice harassment in the company? | "lef for 4 years will be eligible to take a sabbatical after ..." | 0.219 | Không | [DEMO LLM] Generated answer from prompt preview: Context: lef for 4 years wil... |
 
-**Bao nhiêu queries trả về chunk relevant trong top-3?** __ / 5
+**Bao nhiêu queries trả về chunk relevant trong top-3?** 3 / 5
 
 ---
 
 ## 7. What I Learned (5 điểm — Demo)
 
 **Điều hay nhất tôi học được từ thành viên khác trong nhóm:**
-> *Viết 2-3 câu:*
+> Tôi nhận ra rằng việc sử dụng `RecursiveChunker` ưu tiên tách văn bản theo cấu trúc ngữ pháp (dấu chấm câu) giúp giữ nguyên vẹn mạch ý nghĩa của câu tốt hơn nhiều so với việc cắt đứt đoạn ngẫu nhiên theo `FixedSizeChunker`. Nhờ thế, câu trả lời sinh ra không bị mất bối cảnh.
 
 **Điều hay nhất tôi học được từ nhóm khác (qua demo):**
-> *Viết 2-3 câu:*
+> Tôi thấy một nhóm đã sử dụng tag metadata để phân loại đối tượng (audience_level). Tức là agent tự động biết tài liệu nào thì nhân viên thông thường được phép truy cập, từ đó đảm bảo RAG không sinh ra câu trả lời chứa nội dung mật dành riêng cho ban lãnh đạo.
 
 **Nếu làm lại, tôi sẽ thay đổi gì trong data strategy?**
-> *Viết 2-3 câu:*
+> Thay vì chỉ gắn metadata theo các trường cơ bản như tên file, tôi sẽ thực hiện làm giàu siêu dữ liệu (enrich metadata) bằng cách tự động tạo ra một tóm tắt ngắn hoặc gắn tags từ khóa chính (keywords) cho mỗi chunk. Điều này sẽ giúp cải thiện thuật toán `search_with_filter` mạnh mẽ hơn rất nhiều khi xử lý kho dữ liệu lớn.
 
 ---
 
