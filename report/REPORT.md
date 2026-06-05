@@ -277,31 +277,39 @@ Bất ngờ nhất là Pair 2 (machine learning vs deep learning) cho score âm 
 
 ## 6. Results — Cá nhân (10 điểm)
 
-Chạy 5 benchmark queries của nhóm trên implementation cá nhân của bạn trong package `src`. **5 queries phải trùng với các thành viên cùng nhóm.**
+**Setup:** `MarkdownSectionChunker(max_chunk_size=1000)` · `EmbeddingStore` (in-memory) · `_mock_embed` · 21 chunks từ 5 tài liệu.
 
 ### Benchmark Queries & Gold Answers (nhóm thống nhất)
 
-| # | Query | Gold Answer |
-|---|-------|-------------|
-| 1 | | |
-| 2 | | |
-| 3 | | |
-| 4 | | |
-| 5 | | |
-
-*(Điền sau khi nhóm thống nhất 5 benchmark queries)*
+| # | Query | Gold Answer | Chunk nguồn |
+|---|-------|-------------|-------------|
+| 1 | Tôi có thể làm việc từ xa bao lâu thì cần xin phép quản lý? | Bất kỳ đợt làm việc từ xa nào kéo dài hơn 2 ngày hoặc ở địa điểm bất thường đều cần phê duyệt của quản lý trước ít nhất 2 tuần. | Working Remotely — `### Extended Remote Work` |
+| 2 | Mỗi tháng tôi tích lũy được bao nhiêu ngày phép năm? | Mỗi tháng làm việc tích lũy được 1.25 ngày phép (tổng 15 ngày/năm). | Vacation and Sick Leave — chunk duy nhất |
+| 3 | Chính sách nghỉ thai sản hoặc nhận con nuôi là bao lâu? | 12 tuần nghỉ phép có lương, áp dụng trong vòng 1 năm đầu sau khi sinh/nhận con nuôi. | New Parent Leave — chunk 0 |
+| 4 | Mức lương cho nhân viên kỹ thuật có dưới 5 năm kinh nghiệm là bao nhiêu? | Nhân viên Technical < 5 năm kinh nghiệm nhận $100k/năm. | Salary & Equity — chunk chứa bảng lương HTML |
+| 5 | Tôi nên liên hệ với ai nếu phát hiện có hành vi quấy rối? | Liên hệ ngay B (b@getclef.com) hoặc một trong các founders khác. | Code of Conduct — chunk 3 (reporting) |
 
 ### Kết Quả Của Tôi
 
-| # | Query | Top-1 Retrieved Chunk (tóm tắt) | Score | Relevant? | Agent Answer (tóm tắt) |
-|---|-------|--------------------------------|-------|-----------|------------------------|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
-| 4 | | | | | |
-| 5 | | | | | |
+> **Embedder:** `_mock_embed` (hash-based, không phản ánh ngữ nghĩa). Queries bằng tiếng Việt, documents bằng tiếng Anh — đây là điều kiện thực tế nhất để quan sát failure modes.
 
-**Bao nhiêu queries trả về chunk relevant trong top-3?** __ / 5
+| # | Query (rút gọn) | Top-1 Chunk | Score | Relevant trong top-3? | Agent Answer (tóm tắt) |
+|---|----------------|-------------|-------|----------------------|------------------------|
+| 1 | Xin phép WFH bao lâu? | Vacation and Sick Leave (sai doc) | 0.2626 | ❌ Không | Echo Vacation doc — sai hoàn toàn |
+| 2 | Tích lũy bao nhiêu ngày phép/tháng? | Code of Conduct (sai doc) | 0.1950 | ❌ Không | Echo Code of Conduct — sai hoàn toàn |
+| 3 | New Parent Leave bao lâu? *(filter: parents)* | New Parent Leave chunk 1 (accrual) | -0.0678 | ✅ Top-2 có (12 weeks chunk) | Echo chunk accrual — thiếu thông tin chính |
+| 4 | Lương Technical <5yr? *(filter: compensation)* | Equity vesting chunk (sai) | 0.1714 | ✅ Top-3 có (salary table chunk) | Echo equity info — không trả lời câu hỏi |
+| 5 | Liên hệ ai khi bị quấy rối? *(filter: conduct)* | Code of Conduct scope chunk | 0.1042 | ✅ Top-3 có (reporting chunk) | Echo scope — thiếu tên liên hệ |
+
+**Bao nhiêu queries trả về chunk relevant trong top-3? 3 / 5**
+
+### Phân Tích Kết Quả
+
+**2 queries thất bại hoàn toàn (Q1, Q2):** `_mock_embed` dùng MD5 hash — query tiếng Việt không có quan hệ vector nào với document tiếng Anh. Score cao nhất (0.26) rơi vào doc sai. Đây là failure mode dự đoán được khi dùng mock embedder với cross-lingual queries.
+
+**3 queries có relevant chunk trong top-3 (Q3–Q5):** Nhờ `metadata_filter` — filter trước giảm search space xuống 2–4 chunks thay vì 21, nên dù similarity score không có nghĩa, vẫn tìm được đúng doc. Tuy nhiên chunk ordering sai (relevant ở top-2 hoặc top-3 thay vì top-1) làm agent answer thiếu chính xác.
+
+**Kết luận:** Với semantic embedder thực (LocalEmbedder/OpenAI), Q1 và Q2 sẽ pass vì query-document similarity sẽ có nghĩa. Metadata filter đã cứu Q3–Q5 — minh chứng rõ ràng cho Metadata Utility.
 
 ---
 
