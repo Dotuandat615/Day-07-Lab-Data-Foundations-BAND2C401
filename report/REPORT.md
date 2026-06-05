@@ -143,8 +143,10 @@ chunker = MarkdownSectionChunker(max_chunk_size=1000)
 | Thành viên | Strategy | Retrieval Score (/10) | Điểm mạnh | Điểm yếu |
 |-----------|----------|----------------------|-----------|----------|
 | Tôi (Phan Văn Hiếu) | MarkdownSectionChunker | 7/10 | Chunk bám sát cấu trúc policy, retrieval precision cao với docs có headers | Thất bại với flat docs (Q2 = 0/2) |
-| Nguyễn Minh Khoa | RecursiveChunker (chunk_size=400) | 6/10 | Không cần biết cấu trúc doc, hoạt động ổn trên mọi loại văn bản | Chunk quá nhỏ, mất coherence ngữ nghĩa ở docs dài |
-| Trần Thị Lan | SentenceChunker (max_sentences=4) | 5/10 | Chunk readable, mỗi chunk là câu hoàn chỉnh | Bullet lists bị vỡ thành fragments, recall thấp trên Working Remotely |
+| Đàm Xuân Giáp | RecursiveChunker (chunk_size=400) | 6/10 | Không cần biết cấu trúc doc, hoạt động ổn trên mọi loại văn bản | Chunk quá nhỏ, mất coherence ngữ nghĩa ở docs dài |
+| Hoàng Hiếu Trung | SentenceChunker (max_sentences=4) | 5/10 | Chunk readable, mỗi chunk là câu hoàn chỉnh | Bullet lists bị vỡ thành fragments, recall thấp trên Working Remotely |
+| Đỗ Tiến Đạt | FixedSizeChunker (chunk_size=600, overlap=100) | 5/10 | Đơn giản, dễ tune tham số, overlap giúp giảm mất context ở ranh giới | Cắt ngang section/bảng HTML, chunk không mang nghĩa trọn vẹn |
+| Nguyễn Tùng Lâm | RecursiveChunker (chunk_size=300) | 6/10 | Chunk rất nhỏ, granular — phù hợp query ngắn cụ thể | Avg length thấp (~280c), context bị phân mảnh quá nhiều |
 
 **Strategy nào tốt nhất cho domain này? Tại sao?**
 
@@ -322,7 +324,7 @@ Bất ngờ nhất là Pair 2 (machine learning vs deep learning) cho score âm 
 
 **Điều hay nhất tôi học được từ thành viên khác trong nhóm:**
 
-Từ Nguyễn Minh Khoa (RecursiveChunker): strategy không cần domain knowledge vẫn hoạt động được ở mức chấp nhận được (6/10) — đây là điểm quan trọng khi triển khai RAG trên bộ tài liệu mới chưa biết cấu trúc. Tôi đã quá tập trung vào việc tối ưu cho domain cụ thể mà bỏ qua tính generalizable. Trong thực tế production, một pipeline "đủ tốt với mọi doc" đôi khi có giá trị hơn "rất tốt với một loại doc".
+Từ Đàm Xuân Giáp (RecursiveChunker): strategy không cần domain knowledge vẫn hoạt động được ở mức chấp nhận được (6/10) — đây là điểm quan trọng khi triển khai RAG trên bộ tài liệu mới chưa biết cấu trúc. Tôi đã quá tập trung vào việc tối ưu cho domain cụ thể mà bỏ qua tính generalizable. Trong thực tế production, một pipeline "đủ tốt với mọi doc" đôi khi có giá trị hơn "rất tốt với một loại doc".
 
 **Điều hay nhất tôi học được từ nhóm khác (qua demo):**
 
