@@ -7,11 +7,13 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from src.agent import KnowledgeBaseAgent
+from src.chunking import RecursiveChunker
 from src.embeddings import (
     EMBEDDING_PROVIDER_ENV,
     LOCAL_EMBEDDING_MODEL,
     OPENAI_EMBEDDING_MODEL,
     LocalEmbedder,
+    MockEmbedder,
     OpenAIEmbedder,
     _mock_embed,
 )
@@ -19,12 +21,11 @@ from src.models import Document
 from src.store import EmbeddingStore
 
 SAMPLE_FILES = [
-    "data/python_intro.txt",
-    "data/vector_store_notes.md",
-    "data/rag_system_design.md",
-    "data/customer_support_playbook.txt",
-    "data/chunking_experiment_report.md",
-    "data/vi_retrieval_notes.md",
+    "data/Company Policies/Working Remotely.md",
+    "data/Company Policies/Vacation and Sick Leave.md",
+    "data/Company Policies/New Parent Leave.md",
+    "data/Company Policies/Salary and Equity Compensation.md",
+    "data/Company Policies/Code of Conduct in the Community.md",
 ]
 
 
@@ -89,19 +90,34 @@ def run_manual_demo(question: str | None = None, sample_files: list[str] | None 
         try:
             embedder = LocalEmbedder(model_name=os.getenv("LOCAL_EMBEDDING_MODEL", LOCAL_EMBEDDING_MODEL))
         except Exception:
-            embedder = _mock_embed
+            print("  [LocalEmbedder not available, falling back to MockEmbedder]")
+            embedder = MockEmbedder()
     elif provider == "openai":
         try:
             embedder = OpenAIEmbedder(model_name=os.getenv("OPENAI_EMBEDDING_MODEL", OPENAI_EMBEDDING_MODEL))
         except Exception:
-            embedder = _mock_embed
+            print("  [OpenAIEmbedder not available, falling back to MockEmbedder]")
+            embedder = MockEmbedder()
     else:
-        embedder = _mock_embed
+        embedder = MockEmbedder()  # default: deterministic hash-based embedder
 
-    print(f"\nEmbedding backend: {getattr(embedder, '_backend_name', embedder.__class__.__name__)}")
+    print(f"\nEmbedding backend: {getattr(embedder, '_backend_name', type(embedder).__name__)}")
+
+    # Chunk documents with RecursiveChunker before indexing
+    chunker = RecursiveChunker(chunk_size=300)
+    chunked_docs: list[Document] = []
+    for doc in docs:
+        chunks = chunker.chunk(doc.content)
+        for i, chunk in enumerate(chunks):
+            chunked_docs.append(Document(
+                id=f"{doc.id}_chunk{i}",
+                content=chunk,
+                metadata=doc.metadata,
+            ))
+    print(f"  Chunked into {len(chunked_docs)} chunks via RecursiveChunker(chunk_size=300)")
 
     store = EmbeddingStore(collection_name="manual_test_store", embedding_fn=embedder)
-    store.add_documents(docs)
+    store.add_documents(chunked_docs)
 
     print(f"\nStored {store.get_collection_size()} documents in EmbeddingStore")
     print("\n=== EmbeddingStore Search Test ===")
