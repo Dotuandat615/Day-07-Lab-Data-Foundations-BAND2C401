@@ -111,8 +111,17 @@ Overlap nhiều hơn làm số chunk tăng vì mỗi chunk mới tiến ít ký 
 
 Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu:
 
-| Tài liệu | Strategy | Chunk Count | Avg Length | Preserves Context? | |-----------|----------|-------------|------------|-------------------| | Working Remotely.md | FixedSizeChunker (`fixed_size`) | 16 | 482.3 | Medium | | Working Remotely.md | SentenceChunker (`by_sentences`) | 11 | 696.8 | Medium | | Working Remotely.md | RecursiveChunker (`recursive`) | 14 | 548.1 | High | | Vacation and Sick Leave.md | FixedSizeChunker (`fixed_size`) | 3 | 420.6 | Medium | | Vacation and Sick Leave.md | SentenceChunker (`by_sentences`) | 2 | 513.5 | Medium | | Vacation and Sick Leave.md | RecursiveChunker (`recursive`) | 2 | 513.5 | High | | New Parent Leave.md | FixedSizeChunker (`fixed_size`) | 4 | 422.0 | Medium | | New Parent Leave.md | SentenceChunker (`by_sentences`) | 3 | 562.7 | Medium | | New Parent Leave.md | RecursiveChunker (`recursive`) | 3 | 562.7 | High |
-
+| Tài liệu | Strategy | Chunk Count | Avg Length | Preserves Context? |
+|-----------|----------|-------------|------------|-------------------|
+| Working Remotely.md | FixedSizeChunker (`fixed_size`) | 16 | 482.3 | Medium |
+| Working Remotely.md | SentenceChunker (`by_sentences`) | 11 | 696.8 | Medium |
+| Working Remotely.md | RecursiveChunker (`recursive`) | 14 | 548.1 | High |
+| Vacation and Sick Leave.md | FixedSizeChunker (`fixed_size`) | 3 | 420.6 | Medium |
+| Vacation and Sick Leave.md | SentenceChunker (`by_sentences`) | 2 | 513.5 | Medium |
+| Vacation and Sick Leave.md | RecursiveChunker (`recursive`) | 2 | 513.5 | High |
+| New Parent Leave.md | FixedSizeChunker (`fixed_size`) | 4 | 422.0 | Medium |
+| New Parent Leave.md | SentenceChunker (`by_sentences`) | 3 | 562.7 | Medium |
+| New Parent Leave.md | RecursiveChunker (`recursive`) | 3 | 562.7 | High |
 
 ### Strategy Của Tôi
 
@@ -174,14 +183,29 @@ Kết quả này cho thấy custom strategy phù hợp với domain Company Poli
 
 ### So Sánh: Strategy của tôi vs Baseline
 
-| Tài liệu | Strategy | Chunk Count | Avg Length | Retrieval Quality? | |-----------|----------|-------------|------------|--------------------| | Working Remotely.md | best baseline: RecursiveChunker | 14 | 548.1 | Good | | Working Remotely.md | **của tôi: PolicySectionChunker** | 10 | 766.7 | Very Good | | Vacation and Sick Leave.md | best baseline: RecursiveChunker | 2 | 513.5 | Good | | Vacation and Sick Leave.md | **của tôi: PolicySectionChunker** | 1 | 1027.0 | Good | | New Parent Leave.md | best baseline: RecursiveChunker | 3 | 562.7 | Good | | New Parent Leave.md | **của tôi: PolicySectionChunker** | 2 | 844.0 | Very Good |
+| Tài liệu | Strategy | Chunk Count | Avg Length | Retrieval Quality? |
+|-----------|----------|-------------|------------|--------------------|
+| Working Remotely.md | best baseline: RecursiveChunker | 14 | 548.1 | Good |
+| Working Remotely.md | **của tôi: PolicySectionChunker** | 10 | 766.7 | Very Good |
+| Vacation and Sick Leave.md | best baseline: RecursiveChunker | 2 | 513.5 | Good |
+| Vacation and Sick Leave.md | **của tôi: PolicySectionChunker** | 1 | 1027.0 | Good |
+| New Parent Leave.md | best baseline: RecursiveChunker | 3 | 562.7 | Good |
+| New Parent Leave.md | **của tôi: PolicySectionChunker** | 2 | 844.0 | Very Good |
+
 
 ### So Sánh Với Thành Viên Khác
 
-| Thành viên | Strategy | Retrieval Score (/10) | Điểm mạnh | Điểm yếu | |-----------|----------|----------------------|-----------|----------| | Tôi | PolicySectionChunker | 8.8/10 | Giữ tốt cấu trúc policy theo Markdown heading; mỗi chunk có document title và section title nên context rõ ràng. | Phụ thuộc vào tài liệu có heading rõ; một số document ngắn có thể chỉ tạo 1 chunk hơi dài. | | Hoàng Hiếu Trung | RecursiveChunker | 8.2/10 | Cân bằng tốt giữa chunk size và context; hoạt động ổn trên nhiều loại tài liệu khác nhau. | Chưa tận dụng triệt để cấu trúc policy như `Scope`, `Policy`, `Procedure`, `Exceptions`. | | Đỗ Tuấn Đạt | SentenceChunker | 7.4/10 | Giữ câu hoàn chỉnh, dễ đọc, ít bị cắt ngang giữa câu. | Có thể tách câu ra khỏi heading hoặc section gốc, làm mất context khi retrieval. |
+| Thành viên | Strategy | Retrieval Score (/10) | Điểm mạnh | Điểm yếu | |-----------|----------|----------------------|-----------|----------| | Tôi | PolicySectionChunker | 8.8/10 | Giữ tốt cấu trúc policy theo Markdown heading; mỗi chunk có document title và section title nên context rõ ràng. Phù hợp với tài liệu Company Policies vì mỗi chính sách thường được chia theo section như `Scope`, `Policy`, `Procedure`, `Exceptions`. | Phụ thuộc vào việc tài liệu có heading rõ ràng; một số document ngắn có thể chỉ tạo 1 chunk hơi dài. | | Hoàng Hiếu Trung | RecursiveChunker | 8.2/10 | Cân bằng tốt giữa chunk size và context; hoạt động ổn trên nhiều loại tài liệu khác nhau. Strategy này phù hợp khi tài liệu có nhiều đoạn văn và cần tránh cắt ngang nội dung quan trọng. | Chưa tận dụng triệt để cấu trúc policy riêng như heading, section title hoặc policy name. Một số chunk có thể vẫn thiếu ngữ cảnh nếu section bị chia nhỏ. | | Đỗ Tuấn Đạt | SentenceChunker | 7.4/10 | Giữ câu hoàn chỉnh, dễ đọc, ít bị cắt ngang giữa câu. Phù hợp với các đoạn FAQ hoặc tài liệu có câu ngắn, rõ ý. | Có thể tách câu ra khỏi heading hoặc section gốc, khiến chunk mất context. Với tài liệu policy, một câu riêng lẻ đôi khi không đủ để trả lời vì cần cả điều kiện và ngoại lệ. | | Nguyễn Tùng Lâm | FixedSizeChunker | 6.8/10 | Dễ triển khai, dễ kiểm soát số lượng ký tự mỗi chunk, phù hợp để làm baseline nhanh. Chunk size đều nên đơn giản khi so sánh kết quả. | Có thể cắt ngang câu, cắt ngang điều khoản hoặc tách phần điều kiện khỏi phần kết luận. Với tài liệu policy, điều này dễ làm retrieval lấy thiếu context. | | Phan Văn Hiếu | Hybrid: RecursiveChunker + Metadata Filter | 8.5/10 | Kết hợp recursive chunking với metadata như `policy_name`, `topic`, `section`, giúp retrieval lọc đúng nhóm tài liệu trước khi search. Cách này giảm nhiễu khi nhiều policy có từ khóa gần giống nhau. | Cần metadata được chuẩn hóa tốt; nếu metadata thiếu hoặc gắn sai thì filter có thể loại mất tài liệu đúng. Implementation cũng phức tạp hơn baseline. |
 
 **Strategy nào tốt nhất cho domain này? Tại sao?**
-Strategy tốt nhất cho domain **Company Policies / Employee Handbook** là `PolicySectionChunker`. Lý do là tài liệu policy thường có cấu trúc Markdown rõ ràng theo các section như `Scope`, `Policy`, `Eligibility`, `Procedure`, nên chunk theo heading giúp giữ ngữ cảnh tự nhiên hơn so với cắt theo số ký tự hoặc theo câu. Kết quả thực nghiệm cũng cho thấy strategy này tạo chunk dễ giải thích, ít cắt ngang điều khoản quan trọng và phù hợp hơn cho truy vấn RAG về chính sách nội bộ.
+
+| Thành viên | Strategy | Retrieval Score (/10) | Điểm mạnh | Điểm yếu |
+|-----------|----------|----------------------|-----------|----------|
+| Tôi | PolicySectionChunker | 8.8/10 | Giữ tốt cấu trúc policy theo Markdown heading; mỗi chunk có document title và section title nên context rõ ràng. Phù hợp với tài liệu Company Policies vì mỗi chính sách thường được chia theo section như `Scope`, `Policy`, `Procedure`, `Exceptions`. | Phụ thuộc vào việc tài liệu có heading rõ ràng; một số document ngắn có thể chỉ tạo 1 chunk hơi dài. |
+| Hoàng Hiếu Trung | RecursiveChunker | 8.2/10 | Cân bằng tốt giữa chunk size và context; hoạt động ổn trên nhiều loại tài liệu khác nhau. Strategy này phù hợp khi tài liệu có nhiều đoạn văn và cần tránh cắt ngang nội dung quan trọng. | Chưa tận dụng triệt để cấu trúc policy riêng như heading, section title hoặc policy name. Một số chunk có thể vẫn thiếu ngữ cảnh nếu section bị chia nhỏ. |
+| Đỗ Tuấn Đạt | SentenceChunker | 7.4/10 | Giữ câu hoàn chỉnh, dễ đọc, ít bị cắt ngang giữa câu. Phù hợp với các đoạn FAQ hoặc tài liệu có câu ngắn, rõ ý. | Có thể tách câu ra khỏi heading hoặc section gốc, khiến chunk mất context. Với tài liệu policy, một câu riêng lẻ đôi khi không đủ để trả lời vì cần cả điều kiện và ngoại lệ. |
+| Nguyễn Tùng Lâm | FixedSizeChunker | 6.8/10 | Dễ triển khai, dễ kiểm soát số lượng ký tự mỗi chunk, phù hợp để làm baseline nhanh. Chunk size đều nên đơn giản khi so sánh kết quả. | Có thể cắt ngang câu, cắt ngang điều khoản hoặc tách phần điều kiện khỏi phần kết luận. Với tài liệu policy, điều này dễ làm retrieval lấy thiếu context. |
+| Phan Văn Hiếu | Hybrid: RecursiveChunker + Metadata Filter | 8.5/10 | Kết hợp recursive chunking với metadata như `policy_name`, `topic`, `section`, giúp retrieval lọc đúng nhóm tài liệu trước khi search. Cách này giảm nhiễu khi nhiều policy có từ khóa gần giống nhau. | Cần metadata được chuẩn hóa tốt; nếu metadata thiếu hoặc gắn sai thì filter có thể loại mất tài liệu đúng. Implementation cũng phức tạp hơn baseline. |
 
 ---
 

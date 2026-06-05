@@ -2,6 +2,7 @@ from .agent import KnowledgeBaseAgent
 from .chunking import (
     ChunkingStrategyComparator,
     FixedSizeChunker,
+    PolicySectionChunker,
     RecursiveChunker,
     SentenceChunker,
     compute_similarity,
@@ -23,6 +24,7 @@ __all__ = [
     "FixedSizeChunker",
     "SentenceChunker",
     "RecursiveChunker",
+    "PolicySectionChunker",
     "ChunkingStrategyComparator",
     "compute_similarity",
     "EmbeddingStore",

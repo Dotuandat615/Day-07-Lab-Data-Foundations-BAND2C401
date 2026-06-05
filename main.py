@@ -18,13 +18,15 @@ from src.embeddings import (
 from src.models import Document
 from src.store import EmbeddingStore
 
+from pathlib import Path
+
 SAMPLE_FILES = [
-    "data/python_intro.txt",
-    "data/vector_store_notes.md",
-    "data/rag_system_design.md",
-    "data/customer_support_playbook.txt",
-    "data/chunking_experiment_report.md",
-    "data/vi_retrieval_notes.md",
+    "data/Company Policies/Working Remotely.md",
+    "data/Company Policies/Vacation and Sick Leave.md",
+    "data/Company Policies/New Parent Leave.md",
+    "data/Company Policies/Salary and Equity Compensation.md ",
+    "data/Company Policies/Code of Conduct in the Community.md"
+
 ]
 
 
