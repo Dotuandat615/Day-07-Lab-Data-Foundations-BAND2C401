@@ -121,7 +121,8 @@ def run_manual_demo(question: str | None = None, sample_files: list[str] | None 
 
 def main() -> int:
     question = " ".join(sys.argv[1:]).strip() if len(sys.argv) > 1 else None
-    return run_manual_demo(question=question)
+    files = [str(file) for file in Path(".").joinpath("data").joinpath("Company Policies").iterdir() if file.is_file()]
+    return run_manual_demo(question=question, sample_files=files)
 
 
 if __name__ == "__main__":

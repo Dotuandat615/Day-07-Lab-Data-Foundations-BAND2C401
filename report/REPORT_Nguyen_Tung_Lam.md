@@ -244,11 +244,11 @@ Chạy 5 benchmark queries của nhóm trên implementation cá nhân của bạ
 
 | # | Query | Top-1 Retrieved Chunk (tóm tắt) | Score | Relevant? | Agent Answer (tóm tắt) |
 |---|-------|--------------------------------|-------|-----------|------------------------|
-| 1 | How long can I work remotely before needing manager approval? | "ly for an extended period of time. This check-in should happ..." | 0.234 | Có | [DEMO LLM] Generated answer from prompt preview: Context: ly for an extended ... |
-| 2 | How many vacation days do I accrue each month? | "s).  These equity grants are larger than industry standard, ..." | 0.251 | Có | [DEMO LLM] Generated answer from prompt preview: Context: s).  These equity g... |
-| 3 | How long is the New Parent Leave policy for birth or adoption? | "s).  These equity grants are larger than industry standard, ..." | 0.244 | Không | [DEMO LLM] Generated answer from prompt preview: Context: s).  These equity g... |
-| 4 | What is the salary for a technical employee with less than 5 years of experience? | "rubric to make sure it stays at market rate.  Note: The thre..." | 0.280 | Có | [DEMO LLM] Generated answer from prompt preview: Context: rubric to make sure... |
-| 5 | Who should I contact if I notice harassment in the company? | "lef for 4 years will be eligible to take a sabbatical after ..." | 0.219 | Không | [DEMO LLM] Generated answer from prompt preview: Context: lef for 4 years wil... |
+| 1 | How long can I work remotely before needing manager approval? | "ly for an extended period of time. This check-in should happ..." | 0.234 | Có | ly for an extended period of time. This check-in should happen at least two weeks in advance, before you make any travel arrangements, and you should come prepared with a plan for how you will handle the logistics and extra communication work involved in extended remote work. In order for an employee to work remotely for an extended period of time, they should have demonstrated in the pas... |     
+| 2 | How many vacation days do I accrue each month? | "s).  These equity grants are larger than industry standard, ..." | 0.251 | Có | s).  These equity grants are larger than industry standard, but also vest over a longer period of time. Employee equity vests over 6 years with a 1 year cliff (while 4 years with a 1 year cliff is standard).  At Clef, we’re hoping to build a team that stays with the company and grows with us, so offering larger ownership of the company over a greater period of time aligns with our goals. ... |
+| 3 | How long is the New Parent Leave policy for birth or adoption? | "s).  These equity grants are larger than industry standard, ..." | 0.244 | Không | s).  These equity grants are larger than industry standard, but also vest over a longer period of time. Employee equity vests over 6 years with a 1 year cliff (while 4 years with a 1 year cliff is standard).  At Clef, we’re hoping to build a team that stays with the company and grows with us, so offering larger ownership of the company over a greater period of time aligns with our goals. ... | 
+| 4 | What is the salary for a technical employee with less than 5 years of experience? | "rubric to make sure it stays at market rate.  Note: The thre..." | 0.280 | Có | rubric to make sure it stays at market rate.  Note: The three Clef founders' salaries do not follow this rubric and are all $50k per year.  ##Equity  Every employee will be offered 41,963 Clef stock options (~.9% of outstanding shares, including the option pool these are drawn from). As mentioned above, they can also choose to reduce their salary by $5k/year in exchange for 4,663 more opt... |
+| 5 | Who should I contact if I notice harassment in the company? | "lef for 4 years will be eligible to take a sabbatical after ..." | 0.219 | Không | lef for 4 years will be eligible to take a sabbatical after 1 more year of work. If they took 12 weeks of new parent leave, when they returned they would still have 1 full year of work before they were eligible for their sabbatical.  In California, State Disability Insurance and Paid Family Leave programs will pay part of an employees salary who are unable to work due to pregnancy and chi... | 
 
 **Bao nhiêu queries trả về chunk relevant trong top-3?** 3 / 5
 
@@ -271,12 +271,12 @@ Chạy 5 benchmark queries của nhóm trên implementation cá nhân của bạ
 
 | Tiêu chí | Loại | Điểm tự đánh giá |
 |----------|------|-------------------|
-| Warm-up | Cá nhân | / 5 |
-| Document selection | Nhóm | / 10 |
-| Chunking strategy | Nhóm | / 15 |
-| My approach | Cá nhân | / 10 |
-| Similarity predictions | Cá nhân | / 5 |
-| Results | Cá nhân | / 10 |
-| Core implementation (tests) | Cá nhân | / 30 |
-| Demo | Nhóm | / 5 |
-| **Tổng** | | **/ 100** |
+| Warm-up | Cá nhân | 5 / 5 |
+| Document selection | Nhóm | 10 / 10 |
+| Chunking strategy | Nhóm | 15 / 15 |
+| My approach | Cá nhân | 10 / 10 |
+| Similarity predictions | Cá nhân | 5 / 5 |
+| Results | Cá nhân | 10 / 10 |
+| Core implementation (tests) | Cá nhân | 30 / 30 |
+| Demo | Nhóm | 5 / 5 |
+| **Tổng** | | **90 / 100** |
