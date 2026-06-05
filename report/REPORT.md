@@ -71,18 +71,19 @@ Tăng overlap từ 50 → 100 làm tăng chunk count từ 23 → 25, vì step si
 
 | # | Tên tài liệu | Nguồn | Số ký tự | Metadata đã gán |
 |---|--------------|-------|----------|-----------------|
-| 1 | | | | |
-| 2 | | | | |
-| 3 | | | | |
-| 4 | | | | |
-| 5 | | | | |
+| 1 | Working Remotely.md | Handbook nội bộ Clef | ~6,955 | `{"category": "work_arrangements", "target_audience": "all_employees", "document_type": "policy"}` |
+| 2 | Vacation and Sick Leave.md | Handbook nội bộ Clef | ~993 | `{"category": "benefits", "target_audience": "all_employees", "document_type": "policy"}` |
+| 3 | New Parent Leave.md | Handbook nội bộ Clef | ~1,513 | `{"category": "benefits", "target_audience": "parents", "document_type": "policy"}` |
+| 4 | Salary and Equity Compensation.md | Handbook nội bộ Clef | ~3,134 | `{"category": "compensation", "target_audience": "all_employees", "document_type": "policy"}` |
+| 5 | Code of Conduct in the Community.md | Handbook nội bộ Clef | ~2,166 | `{"category": "conduct", "target_audience": "all_employees", "document_type": "guidelines"}` |
 
 ### Metadata Schema
 
 | Trường metadata | Kiểu | Ví dụ giá trị | Tại sao hữu ích cho retrieval? |
 |----------------|------|---------------|-------------------------------|
-| | | | |
-| | | | |
+| `category` | String | `"benefits"`, `"conduct"`, `"compensation"` | Cho phép lọc chính xác nhóm chính sách liên quan, tránh nhiễu từ các chính sách khác. |
+| `target_audience` | String | `"all_employees"`, `"parents"`, `"remote_workers"` | Giúp giới hạn kết quả chỉ lấy chính sách áp dụng đúng đối tượng người hỏi (ví dụ: cha mẹ, nhân viên remote). |
+| `document_type` | String | `"policy"`, `"guidelines"`, `"faq"` | Hỗ trợ lọc theo tính chất pháp lý hoặc định dạng tài liệu mà người dùng muốn tra cứu. |
 
 ---
 
@@ -90,43 +91,52 @@ Tăng overlap từ 50 → 100 làm tăng chunk count từ 23 → 25, vì step si
 
 ### Baseline Analysis
 
-Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu:
+Chạy `ChunkingStrategyComparator().compare(text, chunk_size=500)` trên 3 tài liệu đại diện:
 
 | Tài liệu | Strategy | Chunk Count | Avg Length | Preserves Context? |
 |-----------|----------|-------------|------------|-------------------|
-| | FixedSizeChunker (`fixed_size`) | | | |
-| | SentenceChunker (`by_sentences`) | | | |
-| | RecursiveChunker (`recursive`) | | | |
+| Working Remotely (6860c) | `fixed_size` | 16 | 476 | Không — cắt ngang bullet list và section |
+| Working Remotely (6860c) | `by_sentences` | 14 | 484 | Một phần — bullet là fragment, không phải câu hoàn chỉnh |
+| Working Remotely (6860c) | `recursive` | 19 | 359 | Một phần — chunk nhỏ, đôi khi chia vụn ý |
+| Salary & Equity (3084c) | `fixed_size` | 7 | 483 | Không — cắt ngang bảng HTML lương |
+| Salary & Equity (3084c) | `by_sentences` | 7 | 435 | Một phần |
+| Salary & Equity (3084c) | `recursive` | 9 | 341 | Một phần |
+| Vacation & Sick Leave (984c) | `fixed_size` | 3 | 361 | Một phần — tài liệu ngắn bị chia không cần thiết |
+| Vacation & Sick Leave (984c) | `by_sentences` | 2 | 487 | Có |
+| Vacation & Sick Leave (984c) | `recursive` | 2 | 491 | Có |
 
-*(Điền sau khi nhóm có bộ tài liệu chính thức)*
+**Nhận xét baseline:** `fixed_size` cho kết quả tệ nhất với tài liệu có cấu trúc (cắt ngang section/table). `by_sentences` tốt hơn với tài liệu ngắn flat, nhưng gặp vấn đề với bullet list. `recursive` chunk quá nhỏ (avg 341–359c) làm mất coherence ngữ nghĩa của từng policy section.
 
 ### Strategy Của Tôi
 
-**Loại:** RecursiveChunker
+**Loại:** MarkdownSectionChunker (custom — mới implement)
 
 **Mô tả cách hoạt động:**
 
-RecursiveChunker thử tách văn bản theo danh sách separator theo thứ tự ưu tiên giảm dần: `["\n\n", "\n", ". ", " ", ""]`. Với mỗi separator, nó tích lũy các pieces vào chunk hiện tại chừng nào còn trong giới hạn `chunk_size`. Khi một piece đơn lẻ vượt quá `chunk_size`, nó tiếp tục đệ quy với separator tiếp theo trong danh sách. Khi hết separator, nó fallback về character split.
+`MarkdownSectionChunker` dùng regex `(?m)^(?=#{1,3}\s)` để split text tại mỗi dòng bắt đầu bằng `#`, `##`, hoặc `###`, giữ nguyên header trong chunk. Nếu một section vượt quá `max_chunk_size=1000`, nó tiếp tục chia theo paragraph (`\n\n`). Không dùng sliding window cứng — mỗi chunk tương ứng đúng một mục chính sách.
 
 **Tại sao tôi chọn strategy này cho domain nhóm?**
 
-RecursiveChunker tôn trọng cấu trúc tự nhiên của văn bản — chia theo paragraph trước, rồi mới theo câu, rồi mới theo từ. Điều này giúp mỗi chunk giữ được ý trọn vẹn thay vì cắt giữa câu như FixedSizeChunker. Với tài liệu kỹ thuật hoặc policy thường có cấu trúc section rõ ràng, strategy này khai thác được cấu trúc đó tốt hơn.
+Tài liệu Company Policies có cấu trúc Markdown rõ ràng: *Working Remotely* có 8 subsection (`## Scope`, `## Approach`, `### Extended Remote Work`...), mỗi subsection trả lời một câu hỏi nhân viên cụ thể. `MarkdownSectionChunker` khai thác cấu trúc này để tạo chunk ngữ nghĩa — query "Do I need manager approval?" sẽ match đúng section `### Extended Remote Work > Get Approval` thay vì một cửa sổ ký tự ngẫu nhiên.
 
-**Code snippet (nếu custom):**
+**Code snippet:**
 ```python
-# Dùng RecursiveChunker built-in với chunk_size điều chỉnh theo domain
-from src import RecursiveChunker
-chunker = RecursiveChunker(chunk_size=400)  # ~2-3 câu mỗi chunk
+from src import MarkdownSectionChunker
+chunker = MarkdownSectionChunker(max_chunk_size=1000)
 ```
 
 ### So Sánh: Strategy của tôi vs Baseline
 
-| Tài liệu | Strategy | Chunk Count | Avg Length | Retrieval Quality? |
+| Tài liệu | Strategy | Chunk Count | Avg Length | Preserves Context? |
 |-----------|----------|-------------|------------|--------------------|
-| | best baseline | | | |
-| | **RecursiveChunker (của tôi)** | | | |
+| Working Remotely | `by_sentences` (best baseline) | 14 | 484 | Một phần |
+| Working Remotely | **MarkdownSectionChunker** | **11** | **620** | **Có — mỗi chunk = 1 section policy** |
+| Salary & Equity | `by_sentences` (best baseline) | 7 | 435 | Một phần |
+| Salary & Equity | **MarkdownSectionChunker** | **4** | **769** | **Có — tách Salary vs Equity rõ ràng** |
+| Vacation & Sick | `recursive` (best baseline) | 2 | 491 | Có |
+| Vacation & Sick | **MarkdownSectionChunker** | **1** | **983** | Kém — doc flat, 1 chunk duy nhất không retrieve được |
 
-*(Điền sau khi chạy benchmark với bộ tài liệu nhóm)*
+**Nhận xét:** `MarkdownSectionChunker` vượt trội trên tài liệu có headers (`##`/`###`). Điểm yếu là tài liệu flat như *Vacation & Sick Leave* chỉ cho 1 chunk — dùng `ParagraphMergeChunker` cho loại này sẽ tốt hơn.
 
 ### So Sánh Với Thành Viên Khác
 
