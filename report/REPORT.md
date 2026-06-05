@@ -281,35 +281,39 @@ Bất ngờ nhất là Pair 2 (machine learning vs deep learning) cho score âm 
 
 ### Benchmark Queries & Gold Answers (nhóm thống nhất)
 
-| # | Query | Gold Answer | Chunk nguồn |
-|---|-------|-------------|-------------|
-| 1 | Tôi có thể làm việc từ xa bao lâu thì cần xin phép quản lý? | Bất kỳ đợt làm việc từ xa nào kéo dài hơn 2 ngày hoặc ở địa điểm bất thường đều cần phê duyệt của quản lý trước ít nhất 2 tuần. | Working Remotely — `### Extended Remote Work` |
-| 2 | Mỗi tháng tôi tích lũy được bao nhiêu ngày phép năm? | Mỗi tháng làm việc tích lũy được 1.25 ngày phép (tổng 15 ngày/năm). | Vacation and Sick Leave — chunk duy nhất |
-| 3 | Chính sách nghỉ thai sản hoặc nhận con nuôi là bao lâu? | 12 tuần nghỉ phép có lương, áp dụng trong vòng 1 năm đầu sau khi sinh/nhận con nuôi. | New Parent Leave — chunk 0 |
-| 4 | Mức lương cho nhân viên kỹ thuật có dưới 5 năm kinh nghiệm là bao nhiêu? | Nhân viên Technical < 5 năm kinh nghiệm nhận $100k/năm. | Salary & Equity — chunk chứa bảng lương HTML |
-| 5 | Tôi nên liên hệ với ai nếu phát hiện có hành vi quấy rối? | Liên hệ ngay B (b@getclef.com) hoặc một trong các founders khác. | Code of Conduct — chunk 3 (reporting) |
+| # | Query | Gold Answer |
+|---|-------|-------------|
+| 1 | How long can I work remotely before needing manager approval? | Any extended remote work period longer than 2 days or working from a non-regular location requires manager approval at least 2 weeks in advance. |
+| 2 | How many vacation days do I accrue each month? | You accrue 1.25 days of paid vacation for every month of work (totaling 15 days/year). |
+| 3 | How long is the New Parent Leave policy for birth or adoption? | The company offers 12 weeks of paid leave for all full-time employees after the birth or adoption of a child, to be taken within the first year. |
+| 4 | What is the salary for a technical employee with less than 5 years of experience? | Technical employees with less than 5 years of experience receive a salary of $100k/year. |
+| 5 | Who should I contact if I notice harassment in the company? | You should contact B (b@getclef.com) or one of the other founders immediately. |
 
 ### Kết Quả Của Tôi
 
-> **Embedder:** `_mock_embed` (hash-based, không phản ánh ngữ nghĩa). Queries bằng tiếng Việt, documents bằng tiếng Anh — đây là điều kiện thực tế nhất để quan sát failure modes.
+**Embedder:** `_mock_embed` · Q3–Q5 dùng thêm `search_with_filter`
 
-| # | Query (rút gọn) | Top-1 Chunk | Score | Relevant trong top-3? | Agent Answer (tóm tắt) |
-|---|----------------|-------------|-------|----------------------|------------------------|
-| 1 | Xin phép WFH bao lâu? | Vacation and Sick Leave (sai doc) | 0.2626 | ❌ Không | Echo Vacation doc — sai hoàn toàn |
-| 2 | Tích lũy bao nhiêu ngày phép/tháng? | Code of Conduct (sai doc) | 0.1950 | ❌ Không | Echo Code of Conduct — sai hoàn toàn |
-| 3 | New Parent Leave bao lâu? *(filter: parents)* | New Parent Leave chunk 1 (accrual) | -0.0678 | ✅ Top-2 có (12 weeks chunk) | Echo chunk accrual — thiếu thông tin chính |
-| 4 | Lương Technical <5yr? *(filter: compensation)* | Equity vesting chunk (sai) | 0.1714 | ✅ Top-3 có (salary table chunk) | Echo equity info — không trả lời câu hỏi |
-| 5 | Liên hệ ai khi bị quấy rối? *(filter: conduct)* | Code of Conduct scope chunk | 0.1042 | ✅ Top-3 có (reporting chunk) | Echo scope — thiếu tên liên hệ |
+| # | Query (rút gọn) | Top-1 Chunk | Score | Relevant top-3? | Agent Answer (tóm tắt) |
+|---|----------------|-------------|-------|-----------------|------------------------|
+| 1 | WFH approval duration? | Salary & Equity (sai doc) | +0.2401 | ✅ Top-2: `### Extended Remote Work` | Echo Salary chunk — sai |
+| 2 | Vacation days per month? | New Parent Leave (sai doc) | +0.2562 | ❌ Vacation doc không có trong top-3 | Echo New Parent Leave — sai |
+| 3 | New Parent Leave duration? *(filter: parents)* | `# New Parent Leave` (đúng!) | +0.0346 | ✅ Top-1 đúng | "12 weeks of paid leave..." — **Đúng** ✅ |
+| 4 | Salary Technical <5yr? *(filter: compensation)* | Salary rubric chunk (đúng!) | +0.1144 | ✅ Top-1 có bảng lương | "...standard rubric...four options..." — Gần đúng |
+| 5 | Contact for harassment? *(filter: conduct)* | Code of Conduct scope | +0.1617 | ✅ Top-3: reporting chunk | Echo scope chunk — thiếu email |
 
-**Bao nhiêu queries trả về chunk relevant trong top-3? 3 / 5**
+**Bao nhiêu queries trả về chunk relevant trong top-3? 4 / 5**
 
 ### Phân Tích Kết Quả
 
-**2 queries thất bại hoàn toàn (Q1, Q2):** `_mock_embed` dùng MD5 hash — query tiếng Việt không có quan hệ vector nào với document tiếng Anh. Score cao nhất (0.26) rơi vào doc sai. Đây là failure mode dự đoán được khi dùng mock embedder với cross-lingual queries.
+**Cải thiện so với queries tiếng Việt (3/5 → 4/5):** Khi query và document cùng ngôn ngữ (tiếng Anh), `_mock_embed` vẫn hash-based nhưng có thêm khả năng trùng n-gram ngẫu nhiên, nên Q1 tìm được đúng chunk ở top-2.
 
-**3 queries có relevant chunk trong top-3 (Q3–Q5):** Nhờ `metadata_filter` — filter trước giảm search space xuống 2–4 chunks thay vì 21, nên dù similarity score không có nghĩa, vẫn tìm được đúng doc. Tuy nhiên chunk ordering sai (relevant ở top-2 hoặc top-3 thay vì top-1) làm agent answer thiếu chính xác.
+**Q2 vẫn thất bại:** `Vacation and Sick Leave.md` bị chunk thành **1 chunk duy nhất** bởi `MarkdownSectionChunker` (doc không có `##` header, chỉ có `# H1`). Chunk quá chung chung, score thấp hơn các chunk khác của doc dài hơn. Đây là **điểm yếu đã biết** của strategy này với flat documents.
 
-**Kết luận:** Với semantic embedder thực (LocalEmbedder/OpenAI), Q1 và Q2 sẽ pass vì query-document similarity sẽ có nghĩa. Metadata filter đã cứu Q3–Q5 — minh chứng rõ ràng cho Metadata Utility.
+**Q3 — kết quả tốt nhất:** Filter `target_audience=parents` giảm search space xuống 2 chunks, top-1 là đúng chunk chứa "12 weeks". Agent answer chính xác. Minh chứng rõ nhất cho **Metadata Utility**.
+
+**Q4 — gần đúng:** Top-1 là chunk chứa bảng lương HTML (`$100k` cho Technical < 5yr). Agent answer echo intro paragraph của bảng — có thông tin nhưng không nêu trực tiếp con số $100k.
+
+**Q5 — relevant ở top-3:** Email `b@getclef.com` nằm trong chunk thứ 3. Agent dùng top-1 (scope chunk) nên bỏ sót. **Fix:** tăng `top_k=5` hoặc dùng `ContextualChunker` để chunk reporting được rank cao hơn.
 
 ---
 
