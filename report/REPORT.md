@@ -158,14 +158,15 @@ class RecursiveChunker:
 
 ### So Sánh Với Thành Viên Khác
 
-| Thành viên | Strategy | Retrieval Score (/10) | Điểm mạnh | Điểm yếu |
-|-----------|----------|----------------------|-----------|----------|
-| Tôi (Hoàng Hiếu Trung) | RecursiveChunker (size=300) | 7/10 | Tôn trọng cấu trúc đoạn văn, chunk tập trung 1 chủ đề | Đôi khi cắt giữa câu ở cấp ". " |
-| [Thành viên 2] | SentenceChunker (3 câu/chunk) | 6/10 | Không bao giờ cắt giữa câu | Chunk dài → embedding pha loãng |
-| [Thành viên 3] | FixedSizeChunker (size=300, overlap=50) | 5/10 | Chunk đều nhau, dễ kiểm soát | Cắt giữa câu, mất ngữ cảnh |
+| Thành viên | Strategy | Total Chunks | Avg Chunk (chars) | Retrieval Top-3 (plain) | Điểm mạnh | Điểm yếu |
+|-----------|----------|-------------|-------------------|-------------------------|-----------|----------|
+| **Tôi — Hoàng Hiếu Trung** | `RecursiveChunker` (size=300) | 79 | ~175 | 2/5 plain · **5/5 filter** | Chunk nhỏ, tập trung 1 ý; filter metadata → 5/5 | Chunk ngắn bị outscored bởi chunk dài hơn khi mock embed |
+| Đỗ Tuấn Đạt | `SentenceChunker` (max=3) | 32 | ~430 | 1 / 5 | Giữ trọn câu hoàn chỉnh, không cắt đứt điều khoản | Chunk lớn → ít granularity; MockEmbedder khó phân biệt |
+| Phan Văn Hiếu | `MarkdownSectionChunker` (custom, max=1000) | 21 | ~620 | **4 / 5** | Mỗi chunk = 1 section chính sách hoàn chỉnh; rõ ràng chủ đề | Flat docs không có `##` header → 1 chunk/doc → Q2 fail |
+| Nguyễn Tùng Lâm | `FixedSizeChunker` (sliding window) | ~30 | ~476 | 3 / 5 | Đơn giản, ổn định, dễ kiểm soát độ dài; overlap giảm đứt gãy | Cắt ngẫu nhiên giữa câu; chunk có thể chứa thông tin thừa |
 
 **Strategy nào tốt nhất cho domain này? Tại sao?**
-> `RecursiveChunker` phù hợp nhất với tài liệu policy của Clef vì các file được viết theo cấu trúc đoạn văn rõ ràng (mỗi đoạn là một chính sách hoặc điều khoản). Bằng cách ưu tiên tách ở `\n\n` trước, các chunk giữ nguyên từng điều khoản đầy đủ và tránh trộn thông tin từ hai chính sách khác nhau vào cùng một chunk. So với `SentenceChunker`, chunk ngắn hơn (~187 ký tự vs ~487 ký tự) giúp vector embedding tập trung hơn và retrieval precision cao hơn.
+> Với domain **Company Policies** của Clef, `MarkdownSectionChunker` (Phan Văn Hiếu) đạt retrieval cao nhất plain search (4/5) nhờ tài liệu đã có cấu trúc `##`/`###` headers rõ ràng — mỗi section map đúng một chủ đề mà người dùng hỏi. Tuy nhiên, `RecursiveChunker` (của tôi) là lựa chọn **cân bằng nhất**: đạt 5/5 với metadata filter, xử lý tốt cả docs có và không có header, tạo chunk có granularity phù hợp. `SentenceChunker` và `FixedSizeChunker` phù hợp khi cần implementation đơn giản hoặc corpus chưa biết cấu trúc, nhưng kém hơn với mock embedder do chunk dài hoặc cắt ngẫu nhiên.
 
 ---
 
