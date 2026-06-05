@@ -62,10 +62,10 @@ Tăng overlap từ 50 → 100 làm tăng chunk count từ 23 → 25, vì step si
 
 ### Domain & Lý Do Chọn
 
-**Domain:** [ví dụ: Customer support FAQ, Vietnamese law, cooking recipes, ...]
+**Domain:** Company HR Policies — Clef Employee Handbook
 
 **Tại sao nhóm chọn domain này?**
-> *[Điền sau khi nhóm thống nhất]*
+HR policy documents là một trong những use case RAG phổ biến nhất trong doanh nghiệp: nhân viên cần tra cứu nhanh quy định mà không phải đọc toàn bộ handbook. Domain này có cấu trúc Markdown rõ ràng (headers `##`/`###`), nội dung đa dạng theo chủ đề (benefits, compensation, conduct, remote work), và metadata theo `category`/`target_audience` có ý nghĩa thực tế cho metadata filtering. Đây cũng là domain dễ đánh giá vì gold answers cụ thể và verify được trực tiếp từ văn bản gốc.
 
 ### Data Inventory
 
@@ -320,26 +320,53 @@ Bất ngờ nhất là Pair 2 (machine learning vs deep learning) cho score âm 
 ## 7. What I Learned (5 điểm — Demo)
 
 **Điều hay nhất tôi học được từ thành viên khác trong nhóm:**
-> *[Điền sau khi so sánh trong nhóm]*
+> *[Điền sau buổi so sánh trong nhóm]*
 
 **Điều hay nhất tôi học được từ nhóm khác (qua demo):**
 > *[Điền sau buổi demo]*
 
 **Nếu làm lại, tôi sẽ thay đổi gì trong data strategy?**
-> *[Điền sau khi có kết quả benchmark]*
+
+Tôi sẽ dùng **hybrid chunking strategy** thay vì một chunker duy nhất cho toàn bộ corpus:
+- `MarkdownSectionChunker` cho các doc có `##`/`###` headers (Working Remotely, Salary, Code of Conduct)
+- `ParagraphMergeChunker(target_size=400)` cho các doc flat không có headers (Vacation, New Parent Leave)
+
+Điều này giải quyết trực tiếp failure case của Q2 — `Vacation and Sick Leave.md` bị gom thành 1 chunk duy nhất (983 chars), làm cho embedding "trung bình hóa" toàn bộ nội dung, không đặc trưng cho bất kỳ câu hỏi cụ thể nào. Với `ParagraphMergeChunker`, doc này sẽ được chia thành 4 chunks granular hơn, cải thiện retrieval recall đáng kể.
+
+Ngoài ra, tôi sẽ dùng `ContextualChunker` thay `MarkdownSectionChunker` để inject `[DocName — Section]` prefix vào mỗi chunk, giúp agent grounding chính xác hơn (đặc biệt Q5 — reporting chunk thiếu context về doc nguồn).
+
+---
+
+### Failure Analysis (Ex 3.5)
+
+**Query thất bại: Q2 — "How many vacation days do I accrue each month?"**
+
+**Retrieval precision = 0:** Top-3 trả về New Parent Leave (score +0.2562), Working Remotely (score +0.1456), và Salary (score +0.1298). `Vacation and Sick Leave.md` hoàn toàn vắng mặt.
+
+**Nguyên nhân gốc — Chunk Coherence:**
+`MarkdownSectionChunker` split trên `##`/`###` headers. `Vacation and Sick Leave.md` chỉ có header `# H1` duy nhất → toàn bộ 983 chars trở thành **1 chunk**. Khi embedding 1 chunk lớn gộp nhiều topic (vacation days, sick leave, chronic illness), vector trở thành "average" của tất cả, không đặc trưng cho câu hỏi về tích lũy vacation. Trong khi đó các docs dài hơn sinh ra nhiều chunks nhỏ, mỗi chunk có embedding "sharper" → score cao hơn dù không liên quan.
+
+**Phân tích theo 5 góc nhìn:**
+- **Retrieval Precision:** 0/3 — không có chunk nào relevant trong top-3
+- **Chunk Coherence:** Kém — 1 chunk/doc quá lớn, mất granularity ngữ nghĩa
+- **Metadata Utility:** Không áp dụng — query này không dùng filter (không biết trước doc nào chứa câu trả lời)
+- **Grounding Quality:** Agent echo sai doc → câu trả lời hoàn toàn sai, không grounded
+- **Data Strategy Impact:** `MarkdownSectionChunker` không phù hợp với flat documents
+
+**Đề xuất cải thiện:** Phát hiện doc structure trước khi chọn chunker — nếu doc có ít hơn 2 `##` headers thì dùng `ParagraphMergeChunker`, ngược lại dùng `MarkdownSectionChunker`.
 
 ---
 
 ## Tự Đánh Giá
 
-| Tiêu chí | Loại | Điểm tự đánh giá |
-|----------|------|-------------------|
-| Warm-up | Cá nhân | 5 / 5 |
-| Document selection | Nhóm | / 10 |
-| Chunking strategy | Nhóm | / 15 |
-| My approach | Cá nhân | 10 / 10 |
-| Similarity predictions | Cá nhân | 5 / 5 |
-| Results | Cá nhân | / 10 |
-| Core implementation (tests) | Cá nhân | 30 / 30 |
-| Demo | Nhóm | / 5 |
-| **Tổng (phần cá nhân)** | | **50 / 60** |
+| Tiêu chí | Loại | Điểm tự đánh giá | Ghi chú |
+|----------|------|------------------|---------|
+| Warm-up | Cá nhân | 5 / 5 | Đầy đủ, có tính toán cụ thể |
+| Document selection | Nhóm | 8 / 10 | Domain rõ, metadata schema hữu ích; 5 docs (đủ tối thiểu) |
+| Chunking strategy | Nhóm | 11 / 15 | Baseline đầy đủ, rationale rõ; so sánh nhóm chờ buổi demo |
+| My approach | Cá nhân | 10 / 10 | Giải thích chi tiết từng hàm, design decision rõ ràng |
+| Similarity predictions | Cá nhân | 5 / 5 | 5 cặp + reflection về mock embedder |
+| Results | Cá nhân | 8 / 10 | 4/5 relevant top-3; Q2 failure documented; analysis đầy đủ |
+| Core implementation (tests) | Cá nhân | 30 / 30 | 42/42 tests pass |
+| Demo | Nhóm | — / 5 | Chưa diễn ra |
+| **Tổng ước tính (không tính Demo)** | | **77 / 95** | |
