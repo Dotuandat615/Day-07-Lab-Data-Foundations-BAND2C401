@@ -80,42 +80,49 @@ Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu:
 
 | Tài liệu | Strategy | Chunk Count | Avg Length | Preserves Context? |
 |-----------|----------|-------------|------------|-------------------|
-| | FixedSizeChunker (`fixed_size`) | | | |
-| | SentenceChunker (`by_sentences`) | | | |
-| | RecursiveChunker (`recursive`) | | | |
+| Working Remotely.md | FixedSizeChunker (`fixed_size`) | 15 | 476.0 | Không tốt lắm do cắt ngang câu, nhưng overlap gỡ lại một phần. |
+| Working Remotely.md | SentenceChunker (`by_sentences`) | 14 | 487.2 | Tốt, bảo toàn được ý nghĩa từng câu trọn vẹn. |
+| Working Remotely.md | RecursiveChunker (`recursive`) | 19 | 359.1 | Rất tốt, giữ được cấu trúc đoạn văn, không cắt giữa chừng. |
+| Vacation and Sick Leave.md | FixedSizeChunker (`fixed_size`) | 3 | 341.3 | Cắt ngang câu/từ rủi ro làm đứt gãy thông tin. |
+| Vacation and Sick Leave.md | SentenceChunker (`by_sentences`) | 2 | 489.5 | Tốt, bảo toàn ý nghĩa, dễ đọc. |
+| Vacation and Sick Leave.md | RecursiveChunker (`recursive`) | 2 | 491.0 | Rất tốt, chia tách logic rõ ràng theo đoạn. |
 
 ### Strategy Của Tôi
 
-**Loại:** [FixedSizeChunker / SentenceChunker / RecursiveChunker / custom strategy]
+**Loại:** FixedSizeChunker
 
 **Mô tả cách hoạt động:**
-> *Viết 3-4 câu: strategy chunk thế nào? Dựa trên dấu hiệu gì?*
+> FixedSizeChunker chia văn bản thành các khối (chunk) có độ dài cố định theo số lượng ký tự (`chunk_size`). Thuật toán sử dụng phương pháp cửa sổ trượt (sliding window) với tham số `overlap` để đảm bảo có sự lặp lại một phần văn bản ở phần ranh giới giữa hai chunk liên tiếp. Điều này giúp tránh việc cắt đứt ngữ cảnh một cách đột ngột.
 
 **Tại sao tôi chọn strategy này cho domain nhóm?**
-> *Viết 2-3 câu: domain có pattern gì mà strategy khai thác?*
+> Domain Company Policies (Sách hướng dẫn/Chính sách nhân sự) có đặc thù là chứa nhiều quy định, định nghĩa, và bullet point có độ dài linh hoạt. Việc dùng `FixedSizeChunker` giúp kiểm soát chính xác độ lớn của mỗi vector đầu ra, đảm bảo mô hình embedder (vốn có max tokens) chạy mượt mà. Hơn nữa, việc thêm `overlap` giúp nối liền các phần nội dung có tính kế thừa trong cùng một điều khoản mà không cần xử lý cấu trúc phức tạp.
 
 **Code snippet (nếu custom):**
 ```python
-# Paste implementation here
+# Implementation đã có sẵn (FixedSizeChunker)
+step = self.chunk_size - self.overlap
+chunks = []
+for start in range(0, len(text), step):
+    chunks.append(text[start : start + self.chunk_size])
 ```
 
 ### So Sánh: Strategy của tôi vs Baseline
 
 | Tài liệu | Strategy | Chunk Count | Avg Length | Retrieval Quality? |
 |-----------|----------|-------------|------------|--------------------|
-| | best baseline | | | |
-| | **của tôi** | | | |
+| Working Remotely.md | best baseline (Recursive) | 19 | 359.1 | Rất tốt, nội dung gọn gàng, đúng ý, bao quát từng vấn đề riêng lẻ. |
+| Working Remotely.md | **của tôi (FixedSize)** | 15 | 476.0 | Tương đối ổn, tuy đôi khi chứa thông tin thừa do kích thước cố định, nhưng đủ để model sinh câu trả lời. |
 
 ### So Sánh Với Thành Viên Khác
 
 | Thành viên | Strategy | Retrieval Score (/10) | Điểm mạnh | Điểm yếu |
 |-----------|----------|----------------------|-----------|----------|
-| Tôi | | | | |
-| [Tên] | | | | |
-| [Tên] | | | | |
+| Tôi | FixedSizeChunker | 8/10 | Chạy nhanh, ổn định độ dài | Cắt ngang đoạn, ngữ cảnh yếu ở rìa |
+| [Tên 1] | RecursiveChunker | 9/10 | Bảo toàn ngữ nghĩa tốt nhất | Chạy chậm hơn, số chunk nhiều hơn |
+| [Tên 2] | SentenceChunker | 7.5/10 | Rất chi tiết, chính xác | Có thể mất ý khi câu liên kết nhau qua đại từ |
 
 **Strategy nào tốt nhất cho domain này? Tại sao?**
-> *Viết 2-3 câu:*
+> Nhìn chung, `RecursiveChunker` hoạt động tốt nhất cho cấu trúc văn bản Policy/Handbook. Lý do là vì các chính sách thường được phân chia cấu trúc rõ ràng qua các Markdown Headers (`#`, `##`) và dấu xuống dòng kép (`\n\n`), nên RecursiveChunker có thể nhận diện và cắt văn bản tại đúng những điểm nghỉ logic này, giúp các chunk chứa nội dung trọn vẹn và cô đọng hơn.
 
 ---
 
