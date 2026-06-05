@@ -117,6 +117,103 @@ class RecursiveChunker:
         return result if result else [current_text]
 
 
+class MarkdownSectionChunker:
+    """
+    Split on markdown headers (## / ###), one policy section per chunk.
+    Falls back to paragraph splitting for sections that exceed max_chunk_size.
+    """
+
+    def __init__(self, max_chunk_size: int = 1000) -> None:
+        self.max_chunk_size = max_chunk_size
+
+    def chunk(self, text: str) -> list[str]:
+        if not text:
+            return []
+        sections = re.split(r'(?m)^(?=#{1,3}\s)', text)
+        chunks = []
+        for section in sections:
+            section = section.strip()
+            if not section:
+                continue
+            if len(section) <= self.max_chunk_size:
+                chunks.append(section)
+            else:
+                paragraphs = section.split('\n\n')
+                current = ""
+                for para in paragraphs:
+                    candidate = (current + "\n\n" + para).strip() if current else para.strip()
+                    if len(candidate) <= self.max_chunk_size:
+                        current = candidate
+                    else:
+                        if current:
+                            chunks.append(current)
+                        current = para.strip()
+                if current:
+                    chunks.append(current)
+        return chunks if chunks else [text]
+
+
+class ContextualChunker:
+    """
+    MarkdownSectionChunker that prepends '[doc_name — Section Name]' to every
+    chunk so the LLM knows exactly which document and section it is reading.
+    """
+
+    def __init__(self, doc_name: str = "", max_chunk_size: int = 1000) -> None:
+        self.doc_name = doc_name
+        self._base = MarkdownSectionChunker(max_chunk_size)
+
+    def chunk(self, text: str) -> list[str]:
+        base_chunks = self._base.chunk(text)
+        result = []
+        for c in base_chunks:
+            header_match = re.match(r'^#{1,3}\s+(.+?)(?:\n|$)', c)
+            section_name = header_match.group(1).strip() if header_match else ""
+            if self.doc_name and section_name:
+                prefix = f"[{self.doc_name} — {section_name}]\n\n"
+            elif self.doc_name:
+                prefix = f"[{self.doc_name}]\n\n"
+            else:
+                prefix = ""
+            result.append(prefix + c)
+        return result
+
+
+class ParagraphMergeChunker:
+    """
+    Accumulate paragraphs (split on blank lines) up to target_size chars,
+    with optional paragraph-level overlap between consecutive chunks.
+    Better than RecursiveChunker for short docs with no markdown headers.
+    """
+
+    def __init__(self, target_size: int = 400, overlap_paragraphs: int = 1) -> None:
+        self.target_size = target_size
+        self.overlap_paragraphs = max(0, overlap_paragraphs)
+
+    def chunk(self, text: str) -> list[str]:
+        if not text:
+            return []
+        paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+        if not paragraphs:
+            return [text.strip()] if text.strip() else []
+
+        chunks = []
+        current_paras: list[str] = []
+
+        for para in paragraphs:
+            current_paras.append(para)
+            if len('\n\n'.join(current_paras)) >= self.target_size:
+                chunks.append('\n\n'.join(current_paras))
+                current_paras = current_paras[-self.overlap_paragraphs:] if self.overlap_paragraphs else []
+
+        if current_paras:
+            last = '\n\n'.join(current_paras)
+            if not chunks or last != chunks[-1]:
+                chunks.append(last)
+
+        return chunks
+
+
 def _dot(a: list[float], b: list[float]) -> float:
     return sum(x * y for x, y in zip(a, b))
 
