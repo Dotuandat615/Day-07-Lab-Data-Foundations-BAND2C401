@@ -1,8 +1,8 @@
 # Báo Cáo Lab 7: Embedding & Vector Store
 
-**Họ tên:** [Tên sinh viên]
+**Họ tên:** Nguyễn Tùng Lâm
 **Nhóm:** [Tên nhóm]
-**Ngày:** [Ngày nộp]
+**Ngày:** 5/6/2026
 
 ---
 
@@ -12,29 +12,35 @@
 
 **High cosine similarity nghĩa là gì?**
 > *Viết 1-2 câu:*
+Khi hai vector có độ tương đồng cosine cao, điều đó có nghĩa là hướng của chúng gần như trùng nhau. Trong không gian vector của các mô hình ngôn ngữ, hướng thường biểu thị cho ý nghĩa ngữ nghĩa (semantic meaning), do đó, high cosine similarity cho thấy hai đoạn văn bản có nội dung rất giống nhau.
 
 **Ví dụ HIGH similarity:**
-- Sentence A:
-- Sentence B:
-- Tại sao tương đồng:
+- Sentence A: "Việc học tiếng Anh mang lại cho tôi nhiều lợi ích trong công việc và cuộc sống."
+- Sentence B: "Học tiếng Anh giúp tôi có nhiều cơ hội tốt hơn trong sự nghiệp và đời sống."
+- Tại sao tương đồng: Cả hai câu đều nói về lợi ích của việc học tiếng Anh. 
 
 **Ví dụ LOW similarity:**
-- Sentence A:
-- Sentence B:
-- Tại sao khác:
+- Sentence A: "Hôm nay trời rất đẹp, tôi quyết định ra công viên chơi." 
+- Sentence B: "Món ăn này thật ngon, tôi rất thích ăn nó."
+- Tại sao khác: 
 
 **Tại sao cosine similarity được ưu tiên hơn Euclidean distance cho text embeddings?**
 > *Viết 1-2 câu:*
+Euclidean distance đo khoảng cách theo đường chim bay, nhạy cảm với độ lớn của vector. Trong khi đó, cosine similarity đo góc giữa các vector, chỉ quan tâm đến hướng (semantic meaning) và không bị ảnh hưởng bởi độ dài vector (document length), giúp nó phù hợp hơn cho việc so sánh sự tương đồng ngữ nghĩa của văn bản.
 
 ### Chunking Math (Ex 1.2)
 
 **Document 10,000 ký tự, chunk_size=500, overlap=50. Bao nhiêu chunks?**
 > *Trình bày phép tính:*
-> *Đáp án:*
+Số chunk = (Tổng độ dài - Overlap) / (Chunk size - Overlap)
+
+Số chunk = (10000 - 50) / (500 - 50) = 9950 / 450 ≈ 23 chunks
+
+> *Đáp án:* 23 chunks
 
 **Nếu overlap tăng lên 100, chunk count thay đổi thế nào? Tại sao muốn overlap nhiều hơn?**
 > *Viết 1-2 câu:*
-
+Việc tăng overlap giúp bảo toàn ngữ cảnh và ý nghĩa văn bản không bị đứt gãy tại các điểm cắt, từ đó cải thiện độ chính xác khi hệ thống AI truy xuất thông tin. Tuy nhiên, bạn chỉ nên giữ ở mức vừa đủ (khoảng 10-20%) vì overlap quá lớn sẽ tạo ra nhiều chunk dư thừa, dẫn đến lãng phí tài nguyên lưu trữ và chi phí xử lý API.
 ---
 
 ## 2. Document Selection — Nhóm (10 điểm)
