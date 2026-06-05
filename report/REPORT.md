@@ -290,28 +290,34 @@ tests/test_solution.py::TestEmbeddingStoreDeleteDocument::test_delete_returns_tr
 
 | # | Query | Top-1 Retrieved Chunk (summary) | Score | Relevant? | Agent Answer (summary) |
 |---|-------|--------------------------------|-------|-----------|------------------------|
-| Q1 | Remote work — manager approval? | Vacation & Sick Leave — "schedule their vacations" | 0.2947 | No | MockLLM: Insufficient context (wrong source) |
-| Q2 | Vacation days accrued per month? | Code of Conduct — "exclusionary jokes" | 0.3299 | No | MockLLM: Insufficient context (wrong source) |
-| Q3 | New Parent Leave duration? | Working Remotely — "co-working space subsidy" | 0.3121 | No | MockLLM: Insufficient context (wrong source) |
-| Q4 | Salary for technical <5 yrs exp? | Working Remotely — "Get Approval From your manager" | 0.3023 | No (top-3: Yes) | MockLLM: Mentions approval, not salary |
-| Q5 | Who to contact for harassment? | Working Remotely — bullet list remote scope | 0.3173 | No | MockLLM: Insufficient context (wrong source) |
+| Q1 | Remote work — manager approval? | Working Remotely — "If you're planning to work remotely for more than two consecutive days..." | 0.2704 | **Yes** | MockLLM: Context contains relevant policy |
+| Q2 | Vacation days accrued per month? | Working Remotely — "not shorter than a day at the office..." | 0.3408 | No | MockLLM: Insufficient context (wrong source) |
+| Q3 | New Parent Leave duration? | Code of Conduct — "harassing behavior are expected to comply..." | 0.2836 | No | MockLLM: Insufficient context (wrong source) |
+| Q4 | Salary for technical <5 yrs exp? | Salary and Equity Compensation — "The following policy will apply to compensation..." | 0.2433 | **Yes** | MockLLM: Context contains relevant policy |
+| Q5 | Who to contact for harassment? | Working Remotely — "fast, consistent wi-fi connection..." | 0.2775 | No | MockLLM: Insufficient context (wrong source) |
 
 **Bao nhiêu queries trả về chunk relevant trong top-3 (plain search)?** 2 / 5
 
 **Với `search_with_filter` (metadata filter):** 5 / 5
 
-### Phân Tích Failure
+### Failure Analysis
 
-**Q1 — Làm từ xa cần xin phép khi nào?**
-> Top-1 là Vacation and Sick Leave.md (score 0.295) thay vì Working Remotely.md. Sau filter `category=work_arrangements`, Working Remotely.md xuất hiện trong top-3 nhưng chunk trả về là về thông báo 7 ngày chứ không phải điều kiện “hơn 2 ngày”. Nguyên nhân: query tiếng Việt + MockEmbedder (hash ngẫu nhiên) không capture semantic similarity.
+**Q1 — Hit! (plain top-1 correct)**
+> English query "How long can I work remotely..." closely matches the Working Remotely.md wording. MockEmbedder hash of this query happened to score highest against the correct chunk: "If you're planning to work remotely for more than two consecutive days..." (score 0.2704). This is one of the two lucky plain-search hits.
 
-**Q2 & Q3 & Q5 — Plain search miss, Filter search hit**
-> Ba queries này không tìm được file đúng trong plain top-3 nhưng filter search thành công. Đặc biệt Q2: chunk đúng trong Vacation.md rất ngắn (~35 ký tự: “accrues 1.25 of a day per month”) — RecursiveChunker tách thành chunk riêng nhỏ, dễ bị các chunk dài hơn có score ngẫu nhiên cao hơn lấp mất. Filter bằng `category=benefits` cẩt không gian xuống còn 16 chunks (Vacation + New Parent Leave) — trong tập nhỏ đó Vacation.md xuất hiện ở top-3.
+**Q2 — Plain miss, filter hit**
+> Top-1 is Working Remotely.md (score 0.3408). The correct chunk in Vacation.md ("accrues 1.25 of a day per month") is very short (~35 chars) and gets outscored by longer chunks with higher random hash similarity. With `category=benefits` filter (16 chunks), Vacation.md appears in top-3.
 
-**Tại sao filter search đạt 5/5 nhưng plain search chỉ 1/5?**
-> `search_with_filter` thu hẹp không gian tìm kiếm từ 79 chunks xuống còn ~13–36 chunks/category (tùy nhóm). Với MockEmbedder (vector ngẫu nhiên), xác suất chunk đúng nằm trong top-3 của subset nhỏ cao hơn nhiều so với full store. Kết quả này chứng minh: **metadata design tốt bù đắp được chất lượng kém của embedding**.
+**Q4 — Hit! (plain top-1 correct)**
+> English query "What is the salary for a technical employee..." directly matches Salary and Equity Compensation.md content (score 0.2433). The hash-based vector for this query happened to score highest on the correct document.
 
-**Kết luận:** Với real embedder (`all-MiniLM-L6-v2`), plain search top-3 hit dự kiến ≥4/5 vì RecursiveChunker tạo chunk nhỏ tập trung → embedding ít bị pha loãng → score phân biệt tốt hơn giữa chunk đúng và nhiễu.
+**Q3 & Q5 — Plain miss, filter hit**
+> Both queries retrieve wrong files in plain search. Metadata filter (`category=benefits+parents` for Q3, `category=conduct` for Q5) narrows the search space, allowing the correct file to surface in top-3.
+
+**Why does filter search achieve 5/5 while plain search only 2/5?**
+> `search_with_filter` narrows the search space from 79 chunks down to 13–36 chunks per category. With MockEmbedder (random hash vectors), the probability of the correct chunk reaching top-3 in a smaller subset is much higher than in the full store. This demonstrates: **good metadata design compensates for poor embedding quality**.
+
+**Conclusion:** With a real embedder (`all-MiniLM-L6-v2`), plain search top-3 hit is expected to reach ≥4/5 because English queries match English policy text semantically — RecursiveChunker's focused small chunks would produce sharper, more discriminative embeddings.
 
 ---
 
