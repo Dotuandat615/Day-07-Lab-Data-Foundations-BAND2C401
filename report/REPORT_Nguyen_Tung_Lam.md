@@ -1,7 +1,7 @@
 # Báo Cáo Lab 7: Embedding & Vector Store
 
 **Họ tên:** Nguyễn Tùng Lâm
-**Nhóm:** [Tên nhóm]
+**Nhóm:** D2
 **Ngày:** 5/6/2026
 
 ---
@@ -118,8 +118,8 @@ for start in range(0, len(text), step):
 | Thành viên | Strategy | Retrieval Score (/10) | Điểm mạnh | Điểm yếu |
 |-----------|----------|----------------------|-----------|----------|
 | Tôi | FixedSizeChunker | 8/10 | Chạy nhanh, ổn định độ dài | Cắt ngang đoạn, ngữ cảnh yếu ở rìa |
-| [Tên 1] | RecursiveChunker | 9/10 | Bảo toàn ngữ nghĩa tốt nhất | Chạy chậm hơn, số chunk nhiều hơn |
-| [Tên 2] | SentenceChunker | 7.5/10 | Rất chi tiết, chính xác | Có thể mất ý khi câu liên kết nhau qua đại từ |
+| Hoàng Hiếu Trung | RecursiveChunker | 9/10 | Bảo toàn ngữ nghĩa tốt nhất | Chạy chậm hơn, số chunk nhiều hơn |
+| Đỗ Tuấn Đạt | SentenceChunker | 7.5/10 | Rất chi tiết, chính xác | Có thể mất ý khi câu liên kết nhau qua đại từ |
 
 **Strategy nào tốt nhất cho domain này? Tại sao?**
 > Nhìn chung, `RecursiveChunker` hoạt động tốt nhất cho cấu trúc văn bản Policy/Handbook. Lý do là vì các chính sách thường được phân chia cấu trúc rõ ràng qua các Markdown Headers (`#`, `##`) và dấu xuống dòng kép (`\n\n`), nên RecursiveChunker có thể nhận diện và cắt văn bản tại đúng những điểm nghỉ logic này, giúp các chunk chứa nội dung trọn vẹn và cô đọng hơn.
