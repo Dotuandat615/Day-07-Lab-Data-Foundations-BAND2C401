@@ -1,7 +1,7 @@
 # Báo Cáo Lab 7: Embedding & Vector Store
 
-**Họ tên:** Phan Hieu
-**Nhóm:** [Tên nhóm]
+**Họ tên:** Phan Văn Hiếu
+**Nhóm:** BAND2C401
 **Ngày:** 2026-06-05
 
 ---
@@ -142,7 +142,7 @@ chunker = MarkdownSectionChunker(max_chunk_size=1000)
 
 | Thành viên | Strategy | Retrieval Score (/10) | Điểm mạnh | Điểm yếu |
 |-----------|----------|----------------------|-----------|----------|
-| Tôi (Phan Hieu) | RecursiveChunker | | | |
+| Tôi (Phan Văn Hiếu) | MarkdownSectionChunker | — | 4/5 relevant top-3 | Kém với flat docs (Q2 fail) |
 | [Tên] | | | | |
 | [Tên] | | | | |
 
