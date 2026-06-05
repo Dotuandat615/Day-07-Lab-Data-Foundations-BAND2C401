@@ -276,25 +276,25 @@ tests/test_solution.py::TestEmbeddingStoreDeleteDocument::test_delete_returns_tr
 
 ### Benchmark Queries & Gold Answers (nhóm thống nhất)
 
-| # | Query | Gold Answer | Nguồn tài liệu |
-|---|-------|-------------|----------------|
-| Q1 | Tôi có thể làm việc từ xa bao lâu thì cần xin phép quản lý? | Bất kỳ đợt làm việc từ xa nào kéo dài hơn 2 ngày hoặc làm việc ở địa điểm bất thường (được định nghĩa là không phải nhà của bạn) đều cần sự phê duyệt của quản lý trước ít nhất 2 tuần. | Working Remotely.md |
-| Q2 | Mỗi tháng tôi tích lũy được bao nhiêu ngày phép năm? | Mỗi tháng làm việc bạn tích lũy được 1.25 ngày phép năm (tổng cộng 15 ngày/năm). | Vacation and Sick Leave.md |
-| Q3 | Chính sách nghỉ thai sản hoặc nhận con nuôi (New Parent Leave) là bao lâu? | Công ty cấp 12 tuần nghỉ phép có lương cho tất cả nhân viên toàn thời gian sau khi sinh hoặc nhận con nuôi, áp dụng trong vòng 1 năm đầu. | New Parent Leave.md |
-| Q4 | Mức lương cho nhân viên kỹ thuật có dưới 5 năm kinh nghiệm là bao nhiêu? | Nhân viên kỹ thuật (Technical) có dưới 5 năm kinh nghiệm sẽ nhận mức lương $100k/năm. | Salary and Equity Compensation.md |
-| Q5 | Tôi nên liên hệ với ai nếu phát hiện có hành vi quấy rối trong công ty? | Bạn cần liên hệ ngay lập tức với B (b@getclef.com) hoặc một trong các founders khác của công ty. | Code of Conduct in the Community.md |
+| # | Query | Gold Answer | Source |
+|---|-------|-------------|--------|
+| Q1 | How long can I work remotely before needing manager approval? | Any extended remote work period longer than 2 days or working from a non-regular location requires your manager's approval at least 2 weeks in advance. | Working Remotely.md |
+| Q2 | How many vacation days do I accrue each month? | You accrue 1.25 days of paid vacation for every month of work (totaling 15 days/year). | Vacation and Sick Leave.md |
+| Q3 | How long is the New Parent Leave policy for birth or adoption? | The company offers 12 weeks of paid leave for all full-time employees after the birth or adoption of a child, to be taken within the first year. | New Parent Leave.md |
+| Q4 | What is the salary for a technical employee with less than 5 years of experience? | Technical employees with less than 5 years of experience receive a salary of $100k/year. | Salary and Equity Compensation.md |
+| Q5 | Who should I contact if I notice harassment in the company? | You should contact B (b@getclef.com) or one of the other founders immediately. | Code of Conduct in the Community.md |
 
 ### Kết Quả Của Tôi
 
 *Strategy: RecursiveChunker(chunk_size=300) · Tổng 79 chunks · MockEmbedder (dim=64)*
 
-| # | Query | Top-1 Retrieved Chunk (tóm tắt) | Score | Relevant? | Agent Answer (tóm tắt) |
+| # | Query | Top-1 Retrieved Chunk (summary) | Score | Relevant? | Agent Answer (summary) |
 |---|-------|--------------------------------|-------|-----------|------------------------|
-| Q1 | Làm việc từ xa cần xin phép khi nào? | Vacation & Sick Leave — "schedule their vacations" | 0.2947 | Không | MockLLM: Không đủ context (chunk sai nguồn) |
-| Q2 | Tích lũy bao nhiêu ngày phép/tháng? | Code of Conduct — "exclusionary jokes" | 0.3299 | Không | MockLLM: Không đủ context (chunk sai nguồn) |
-| Q3 | New Parent Leave bao lâu? | Working Remotely — "co-working space subsidy" | 0.3121 | Không | MockLLM: Không đủ context (chunk sai nguồn) |
-| Q4 | Lương kỹ thuật dưới 5 năm? | Working Remotely — "Get Approval From your manager" | 0.3023 | Không (top-3: Có) | MockLLM: Đề cập xin phép nhưng không đúng chủ đề lương |
-| Q5 | Liên hệ ai khi phát hiện quấy rối? | Working Remotely — bullet list remote scope | 0.3173 | Không | MockLLM: Không đủ context (chunk sai nguồn) |
+| Q1 | Remote work — manager approval? | Vacation & Sick Leave — "schedule their vacations" | 0.2947 | No | MockLLM: Insufficient context (wrong source) |
+| Q2 | Vacation days accrued per month? | Code of Conduct — "exclusionary jokes" | 0.3299 | No | MockLLM: Insufficient context (wrong source) |
+| Q3 | New Parent Leave duration? | Working Remotely — "co-working space subsidy" | 0.3121 | No | MockLLM: Insufficient context (wrong source) |
+| Q4 | Salary for technical <5 yrs exp? | Working Remotely — "Get Approval From your manager" | 0.3023 | No (top-3: Yes) | MockLLM: Mentions approval, not salary |
+| Q5 | Who to contact for harassment? | Working Remotely — bullet list remote scope | 0.3173 | No | MockLLM: Insufficient context (wrong source) |
 
 **Bao nhiêu queries trả về chunk relevant trong top-3 (plain search)?** 2 / 5
 
