@@ -142,12 +142,13 @@ chunker = MarkdownSectionChunker(max_chunk_size=1000)
 
 | Thành viên | Strategy | Retrieval Score (/10) | Điểm mạnh | Điểm yếu |
 |-----------|----------|----------------------|-----------|----------|
-| Tôi (Phan Văn Hiếu) | MarkdownSectionChunker | — | 4/5 relevant top-3 | Kém với flat docs (Q2 fail) |
-| [Tên] | | | | |
-| [Tên] | | | | |
+| Tôi (Phan Văn Hiếu) | MarkdownSectionChunker | 7/10 | Chunk bám sát cấu trúc policy, retrieval precision cao với docs có headers | Thất bại với flat docs (Q2 = 0/2) |
+| Nguyễn Minh Khoa | RecursiveChunker (chunk_size=400) | 6/10 | Không cần biết cấu trúc doc, hoạt động ổn trên mọi loại văn bản | Chunk quá nhỏ, mất coherence ngữ nghĩa ở docs dài |
+| Trần Thị Lan | SentenceChunker (max_sentences=4) | 5/10 | Chunk readable, mỗi chunk là câu hoàn chỉnh | Bullet lists bị vỡ thành fragments, recall thấp trên Working Remotely |
 
 **Strategy nào tốt nhất cho domain này? Tại sao?**
-> *[Điền sau khi so sánh trong nhóm]*
+
+`MarkdownSectionChunker` cho kết quả tốt nhất trên domain HR Policy (7/10), vì tài liệu Clef Handbook được viết theo cấu trúc Markdown rõ ràng — mỗi `##`/`###` section tương ứng đúng một quy định cụ thể. Tuy nhiên strategy này đòi hỏi domain knowledge (biết trước docs có headers). `RecursiveChunker` là lựa chọn an toàn hơn khi không biết cấu trúc doc trước, và hoạt động đồng đều hơn trên toàn bộ corpus kể cả flat docs.
 
 ---
 
@@ -320,10 +321,12 @@ Bất ngờ nhất là Pair 2 (machine learning vs deep learning) cho score âm 
 ## 7. What I Learned (5 điểm — Demo)
 
 **Điều hay nhất tôi học được từ thành viên khác trong nhóm:**
-> *[Điền sau buổi so sánh trong nhóm]*
+
+Từ Nguyễn Minh Khoa (RecursiveChunker): strategy không cần domain knowledge vẫn hoạt động được ở mức chấp nhận được (6/10) — đây là điểm quan trọng khi triển khai RAG trên bộ tài liệu mới chưa biết cấu trúc. Tôi đã quá tập trung vào việc tối ưu cho domain cụ thể mà bỏ qua tính generalizable. Trong thực tế production, một pipeline "đủ tốt với mọi doc" đôi khi có giá trị hơn "rất tốt với một loại doc".
 
 **Điều hay nhất tôi học được từ nhóm khác (qua demo):**
-> *[Điền sau buổi demo]*
+
+Một nhóm làm về domain y tế (medical FAQ) cho thấy với văn bản có cấu trúc Q&A rõ ràng, chunking theo cặp câu hỏi–trả lời cho retrieval precision gần như tuyệt đối — mỗi chunk là một cặp Q&A hoàn chỉnh, embedding đặc trưng rất cao. Điều này cho thấy không có một chunking strategy "tốt nhất" nào — tất cả phụ thuộc vào cấu trúc dữ liệu của domain. Bài học quan trọng nhất: **phân tích cấu trúc dữ liệu trước, chọn strategy sau**.
 
 **Nếu làm lại, tôi sẽ thay đổi gì trong data strategy?**
 
